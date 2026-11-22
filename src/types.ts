@@ -33,6 +33,7 @@ export interface Timeslot {
   start: string;
   stop?: string;
   actions: Action[];
+  exit_actions?: Action[];
   conditions: ConditionConfig;
 }
 

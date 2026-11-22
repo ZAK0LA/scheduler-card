@@ -136,6 +136,7 @@
         "stop_time": "Czas zakończenia",
         "action": "Akcja",
         "add_action": "Dodaj akcję",
+        "exit_action": "Akcja na końcu przedziału czasowego",
         "select_timeslot": "Wybierz przedział czasowy",
         "toggle_single_mode": "Do trybu prostego",
         "toggle_scheme_mode": "Do trybu schematu",

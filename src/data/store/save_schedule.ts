@@ -70,6 +70,9 @@ const parseTimeslot = (input: Timeslot): LegacyTimeslot => {
     start: input.start,
     stop: input.stop,
     actions: input.actions.map((e) => parseAction(e)).flat(),
+    // exit actions require a stop time
+    exit_actions:
+      input.stop && input.exit_actions?.length ? input.exit_actions.map((e) => parseAction(e)).flat() : undefined,
     condition_type: input.conditions.items.length
       ? input.conditions.type == TConditionLogicType.And
         ? 'and'

@@ -36,6 +36,7 @@ export interface LegacyTimeslot {
   condition_type?: 'or' | 'and';
   track_conditions?: boolean;
   actions: ServiceCall[];
+  exit_actions?: ServiceCall[];
 }
 
 export type WeekdayType = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun' | 'workday' | 'weekend' | 'daily';
@@ -81,6 +82,7 @@ const parseTimeslot = (input: LegacyTimeslot): Timeslot => {
     start: input.start,
     stop: input.stop,
     actions: computeUniqueActions(input.actions.map(parseAction)),
+    exit_actions: input.exit_actions?.length ? computeUniqueActions(input.exit_actions.map(parseAction)) : [],
     conditions: <ConditionConfig>{
       type: input.condition_type == 'and' ? TConditionLogicType.And : TConditionLogicType.Or,
       items: input.conditions || [],

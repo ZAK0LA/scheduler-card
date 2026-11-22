@@ -197,8 +197,9 @@ But there are differences:
 After a timeslot has triggered the action, the schedule will wait for the next timeslot.
 So, you can keep controlling your entity as you want without worrying that the schedule will not re-trigger its action again.
 
-:warning: **Note** At the end of the timeslot, there is no action executed.
-This means that if you turn on a device during a timeslot, you will have to add a second timeslot to turn it off.
+:warning: **Note** At the end of the timeslot, there is no action executed, unless you add an *action at end of timeslot* in the time scheme editor.
+That action is only executed if the action of the timeslot was executed, i.e. if its conditions were met.
+Without it, if you turn on a device during a timeslot, you will have to add a second timeslot to turn it off.
 It is *highly recommended* (but not required) to assign actions to every timeslot, such that the behaviour for the whole day is defined.
 
 #### Time scheme editor

@@ -136,6 +136,7 @@
         "stop_time": "End time",
         "action": "Action",
         "add_action": "Add action",
+        "exit_action": "Action at end of timeslot",
         "select_timeslot": "Select a timeslot",
         "toggle_single_mode": "To single mode",
         "toggle_scheme_mode": "To scheme mode",

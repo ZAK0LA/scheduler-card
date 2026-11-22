@@ -46,6 +46,8 @@ import '../components/scheduler-collapsible-section';
 import '../components/scheduler-settings-row';
 import '../components/scheduler-combo-selector';
 
+type ActionKey = 'actions' | 'exit_actions';
+
 @customElement('scheduler-main-panel')
 export class SchedulerMainPanel extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -213,16 +215,25 @@ export class SchedulerMainPanel extends LitElement {
         : ''
       }
       ${localize('ui.panel.editor.action', this.hass)}: ${this._renderActionConfig()}
+      ${isDefined(slot.stop) && slot.actions.length
+        ? html`
+            <div class="exit-action">
+              ${localize('ui.panel.editor.exit_action', this.hass)}: ${this._renderActionConfig('exit_actions')}
+            </div>
+          `
+        : ''
+      }
     `;
   }
 
-  _renderActionConfig() {
+  _renderActionConfig(key: ActionKey = 'actions') {
     const slot: Timeslot = { ...this.schedule.entries[this.selectedEntry!].slots[this.selectedSlot!] };
-    const action = slot.actions.length ? slot.actions[0] : undefined;
+    const actions = slot[key] || [];
+    const action = actions.length ? actions[0] : undefined;
     if (!action)
       return html`
         <div>
-          <ha-button appearance="plain" @click=${this._showActionDialog}>
+          <ha-button appearance="plain" @click=${(ev: Event) => this._showActionDialog(ev, key)}>
             <ha-icon slot="start" icon="mdi:plus"></ha-icon>
             ${localize('ui.panel.editor.add_action', this.hass)}
           </ha-button>
@@ -266,7 +277,7 @@ export class SchedulerMainPanel extends LitElement {
 
         <ha-dropdown
           slot="contextMenu"
-          @wa-select=${this._actionItemOptionsClick}
+          @wa-select=${(ev: CustomEvent) => this._actionItemOptionsClick(ev, key)}
           @wa-after-hide=${(ev: Event) => {
         ((ev.target as HTMLElement).firstElementChild as HTMLElement).blur();
       }}
@@ -322,7 +333,7 @@ export class SchedulerMainPanel extends LitElement {
                         <ha-checkbox
                           slot="prefix"
                           ?checked=${checked}
-                          @change=${(ev: Event) => this._toggleOptionalField(ev, field, selector)}
+                          @change=${(ev: Event) => this._toggleOptionalField(ev, field, selector, key)}
                         >
                         </ha-checkbox>
                       `
@@ -334,7 +345,7 @@ export class SchedulerMainPanel extends LitElement {
                   .config=${selector}
                   ?disabled=${!checked}
                   .value=${Object.keys(action.service_data).includes(field) ? action.service_data[field] : undefined}
-                  @value-changed=${(ev: CustomEvent) => this._selectField(field, ev)}
+                  @value-changed=${(ev: CustomEvent) => this._selectField(field, ev, key)}
                 >
                 </scheduler-combo-selector>
               </scheduler-settings-row>
@@ -345,38 +356,40 @@ export class SchedulerMainPanel extends LitElement {
     `;
   }
 
-  _selectField(field: string, ev: CustomEvent) {
+  _selectField(field: string, ev: CustomEvent, actionKey: ActionKey = 'actions') {
     const value = ev.detail.value;
 
     const slot: Timeslot = { ...this.schedule.entries[this.selectedEntry!].slots[this.selectedSlot!] };
+    const current = slot[actionKey]![0];
     const action: Action =
       value !== undefined
         ? {
-          ...slot.actions[0],
+          ...current,
           service_data: {
-            ...slot.actions[0].service_data,
+            ...current.service_data,
             [field]: value,
           },
         }
         : {
-          ...slot.actions[0],
+          ...current,
           service_data: Object.fromEntries(
-            Object.entries(slot.actions[0].service_data).filter(([key]) => key != field)
+            Object.entries(current.service_data).filter(([key]) => key != field)
           ),
         };
-    this._updateSlot({ actions: [action] });
+    this._updateSlot(<Partial<Timeslot>>{ [actionKey]: [action] });
   }
 
-  _toggleOptionalField(ev: Event, field: string, selector: Selector) {
+  _toggleOptionalField(ev: Event, field: string, selector: Selector, actionKey: ActionKey = 'actions') {
     const checked = (ev.target as HTMLInputElement).checked;
     const value = checked ? defaultSelectorValue(selector) : undefined;
     if (checked) {
       this._selectField(
         field,
-        new CustomEvent('value-changed', { detail: { value: isDefined(value) ? value : null } })
+        new CustomEvent('value-changed', { detail: { value: isDefined(value) ? value : null } }),
+        actionKey
       );
     } else {
-      this._selectField(field, new CustomEvent('value-changed', { detail: { value: undefined } }));
+      this._selectField(field, new CustomEvent('value-changed', { detail: { value: undefined } }), actionKey);
     }
   }
 
@@ -385,14 +398,20 @@ export class SchedulerMainPanel extends LitElement {
     if (!entity) return;
 
     this.schedule.entries[this.selectedEntry!].slots.forEach((slot, idx) => {
-      if (!slot.actions.length) return;
-      const action: Action = {
-        ...slot.actions[0],
-        target: {
-          entity_id: entity,
-        },
-      };
-      this._updateSlot({ actions: [action] }, idx);
+      const update: Partial<Timeslot> = {};
+      (<ActionKey[]>['actions', 'exit_actions']).forEach((key) => {
+        const actions = slot[key] || [];
+        if (!actions.length) return;
+        update[key] = [
+          {
+            ...actions[0],
+            target: {
+              entity_id: entity,
+            },
+          },
+        ];
+      });
+      if (Object.keys(update).length) this._updateSlot(update, idx);
     });
   }
 
@@ -451,13 +470,13 @@ export class SchedulerMainPanel extends LitElement {
     });
   }
 
-  async _showActionDialog(ev: Event) {
+  async _showActionDialog(ev: Event, actionKey: ActionKey = 'actions') {
     let filteredDomains: string[] = [];
     let filteredEntities: string[] = [];
 
     this.schedule.entries.forEach((entry) => {
       entry.slots.forEach((slot) => {
-        slot.actions.forEach((action) => {
+        [...slot.actions, ...(slot.exit_actions || [])].forEach((action) => {
           filteredEntities = [...filteredEntities, ...[action.target?.entity_id || []].flat()];
           filteredDomains = [
             ...filteredDomains,
@@ -491,18 +510,19 @@ export class SchedulerMainPanel extends LitElement {
       );
       let action = { ...res };
       if (target && action.target) action = { ...action, target: target.actions[0].target };
-      this._updateSlot({ actions: [action] });
+      this._updateSlot(<Partial<Timeslot>>{ [actionKey]: [action] });
     });
   }
 
-  _actionItemOptionsClick(ev: CustomEvent) {
+  _actionItemOptionsClick(ev: CustomEvent, actionKey: ActionKey = 'actions') {
     const option: 'delete' | 'change_type' = ev.detail.item.value;
     switch (option) {
       case 'change_type':
-        this._showActionDialog(ev);
+        this._showActionDialog(ev, actionKey);
         break;
       case 'delete':
-        this._updateSlot({ actions: [] });
+        // exit actions belong to the action of the timeslot
+        this._updateSlot(actionKey == 'actions' ? { actions: [], exit_actions: [] } : { exit_actions: [] });
         break;
     }
   }
@@ -549,6 +569,9 @@ export class SchedulerMainPanel extends LitElement {
     return css`
       :host {
         position: relative;
+      }
+      .exit-action {
+        margin-top: 16px;
       }
       .two-column {
         display: flex;

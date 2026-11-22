@@ -53,6 +53,7 @@ export const parseTimeBar = (schedule: Schedule, hass: HomeAssistant): Schedule 
             start: startTime,
             stop: slot.start,
             actions: [],
+            exit_actions: [],
             conditions: slot.conditions,
           })
         );

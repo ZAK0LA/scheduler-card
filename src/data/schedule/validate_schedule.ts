@@ -70,9 +70,16 @@ export const validateSchedule = (
     .flat()
     .flat();
   if (!actions.length) errors = [...errors, ValidationError.MissingAction];
+
+  const exitActions = schedule.entries
+    .map((e) => e.slots.filter((f) => f.actions.length && f.stop).map((f) => f.exit_actions || []))
+    .flat()
+    .flat();
   errors = [
     ...errors,
-    ...(<ValidationError[]>actions.map((e) => validateAction(e, hass, customize)).filter((e) => e !== null)),
+    ...(<ValidationError[]>(
+      [...actions, ...exitActions].map((e) => validateAction(e, hass, customize)).filter((e) => e !== null)
+    )),
   ];
 
   if (errors.length) return errors.shift()!;
