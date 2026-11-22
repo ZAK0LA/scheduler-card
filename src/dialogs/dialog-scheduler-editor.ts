@@ -18,6 +18,7 @@ import { parseTimeBar } from '../data/time/parse_time_bar';
 import { hassLocalize } from '../localize/hassLocalize';
 import { convertSchemeToSingle } from '../data/schedule/convert_scheme_to_single';
 import { isDefined } from '../lib/is_defined';
+import { getEntityIcon, updateEntityIcon } from '../data/store/entity_icon';
 
 import './scheduler-main-panel';
 import './scheduler-options-panel';
@@ -44,6 +45,10 @@ export class DialogSchedulerEditor extends LitElement {
 
   @state() _panel: 'main' | 'options' = 'main';
 
+  // custom icon of the schedule entity, stored in the entity registry when the schedule is saved
+  @state() _icon: string | null = null;
+  private _initialIcon: string | null = null;
+
   @state() _viewMode: EditorMode = EditorMode.Single;
   set viewMode(mode: EditorMode) {
     this._viewMode = mode;
@@ -64,6 +69,8 @@ export class DialogSchedulerEditor extends LitElement {
     this.schedule = params.schedule;
     this._panel = 'main';
     this.large = false;
+    this._icon = this._initialIcon =
+      (this.schedule.entity_id && getEntityIcon(this.hass, this.schedule.entity_id)) || null;
 
     const isTimeSchemeType =
       this.schedule.entries[this.selectedEntry!].slots.filter((e) => e.actions.length && isDefined(e.stop)).length >
@@ -153,6 +160,7 @@ export class DialogSchedulerEditor extends LitElement {
                     .hass=${this.hass}
                     .config=${this._params.cardConfig}
                     .schedule=${this.schedule}
+                    .icon=${this._icon}
                     @change=${this._updateSchedule}
                   >
                   </scheduler-options-panel>
@@ -186,6 +194,9 @@ export class DialogSchedulerEditor extends LitElement {
     if (changedProps.includes('selectedSlot')) {
       this.selectedSlot = ev.detail.selectedSlot;
     }
+    if (changedProps.includes('icon')) {
+      this._icon = ev.detail.icon;
+    }
   }
 
   private async _handleSaveClick(ev: Event) {
@@ -208,6 +219,11 @@ export class DialogSchedulerEditor extends LitElement {
       });
     } else if (this.schedule.schedule_id) {
       const oldSchedule = parseTimeBar(await fetchScheduleItem(this.hass, this.schedule.schedule_id!), this.hass);
+      if (this._icon !== this._initialIcon) {
+        await updateEntityIcon(this.hass, this.schedule.entity_id!, this._icon).catch((e) =>
+          handleWebsocketError(e, this, this.hass)
+        );
+      }
       //do not save if there are no changes made
       if (deepCompare(this.schedule, oldSchedule)) {
         this.closeDialog();

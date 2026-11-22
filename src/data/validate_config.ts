@@ -67,9 +67,10 @@ export const validateConfig = (config: any) => {
 
       if (
         hasKey(config.display_options, 'icon') &&
-        (!isTypeString(config.display_options.icon) || !['action', 'entity'].includes(config.display_options.icon))
+        (!isTypeString(config.display_options.icon) ||
+          !['action', 'entity', 'schedule'].includes(config.display_options.icon))
       ) {
-        errors.push(`in 'display_options': 'icon' must be a set to either 'action' or 'entity' `);
+        errors.push(`in 'display_options': 'icon' must be set to 'action', 'entity' or 'schedule'`);
       }
     }
   }

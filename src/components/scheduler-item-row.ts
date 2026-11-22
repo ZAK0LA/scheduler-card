@@ -2,6 +2,7 @@ import { CSSResultGroup, LitElement, css, html } from 'lit';
 import { customElement, property } from 'lit/decorators';
 import { CardConfig, Schedule } from '../types';
 import { computeActionIcon } from '../data/format/compute_action_icon';
+import { getEntityIcon } from '../data/store/entity_icon';
 import { HomeAssistant } from '../lib/types';
 import { computeScheduleDisplay } from '../data/format/compute_schedule_display';
 import { unsafeHTML } from 'lit/directives/unsafe-html';
@@ -31,6 +32,8 @@ export class SchedulerItemRow extends LitElement {
         if (['script', 'notify'].includes(computeDomain(nextAction.service))) entityId = nextAction.service;
         if (entityId) icon = computeEntityIcon(entityId, this.config.customize, this.hass);
       }
+      if (this.config.display_options?.icon == 'schedule')
+        icon = getEntityIcon(this.hass, this.schedule.entity_id!) || icon;
       const hasRemovedEntity = ![nextAction.target?.entity_id || []]
         .flat()
         .every((entity_id) => Object.keys(this.hass.states).includes(entity_id));

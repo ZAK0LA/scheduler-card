@@ -192,6 +192,31 @@ export class SchedulerCardEditor extends LitElement {
           </div>
         </div>
 
+        <span>${localize('ui.panel.card_editor.fields.display_format_icon.heading', this.hass)}</span>
+        <div class="two-columns">
+          <div class="column radio" @click=${() => this._setDisplayOptionsIcon('action')}>
+            <ha-icon
+              icon="${(this._config.display_options?.icon || 'action') == 'action' ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"
+              class="${(this._config.display_options?.icon || 'action') == 'action' ? 'checked' : ''}"
+            ></ha-icon>
+            <span>${localize('ui.panel.card_editor.fields.display_format_icon.options.action', this.hass)}</span>
+          </div>
+          <div class="column radio" @click=${() => this._setDisplayOptionsIcon('entity')}>
+            <ha-icon
+              icon="${(this._config.display_options?.icon || 'action') == 'entity' ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"
+              class="${(this._config.display_options?.icon || 'action') == 'entity' ? 'checked' : ''}"
+            ></ha-icon>
+            <span>${localize('ui.panel.card_editor.fields.display_format_icon.options.entity', this.hass)}</span>
+          </div>
+          <div class="column radio" @click=${() => this._setDisplayOptionsIcon('schedule')}>
+            <ha-icon
+              icon="${(this._config.display_options?.icon || 'action') == 'schedule' ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"
+              class="${(this._config.display_options?.icon || 'action') == 'schedule' ? 'checked' : ''}"
+            ></ha-icon>
+            <span>${localize('ui.panel.card_editor.fields.display_format_icon.options.schedule', this.hass)}</span>
+          </div>
+        </div>
+
         <span>${localize('ui.panel.card_editor.fields.display_format_primary.heading', this.hass)}</span>
 
         <div class="two-columns">
@@ -352,6 +377,10 @@ export class SchedulerCardEditor extends LitElement {
       primary_info: value,
     };
     this._updateConfig({ display_options: displayOptions });
+  }
+
+  private _setDisplayOptionsIcon(icon: 'action' | 'entity' | 'schedule') {
+    this._updateConfig({ display_options: { ...this._config.display_options, icon: icon } });
   }
 
   private _setDisplayOptionsSecondary(ev: Event) {

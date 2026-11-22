@@ -169,7 +169,10 @@
           "end_date": "Do"
         },
         "repeat_type": "zachowanie po zakończeniu",
-        "tags": "Tagi"
+        "tags": "Tagi",
+        "icon": {
+          "header": "Ikona"
+        }
       },
       "card_editor": {
         "tabs": {
@@ -209,6 +212,14 @@
               "relative_time": "Czas do następnej akcji",
               "title": "Wyświetlana nazwa harmonogramu",
               "state": "Pokaż aktywne harmonogramy na górze"
+            }
+          },
+          "display_format_icon": {
+            "heading": "Wyświetlana ikona",
+            "options": {
+              "action": "Akcja",
+              "entity": "Encja",
+              "schedule": "Harmonogram"
             }
           },
           "display_format_primary": {

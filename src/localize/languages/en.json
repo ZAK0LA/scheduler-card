@@ -169,7 +169,10 @@
           "end_date": "To"
         },
         "repeat_type": "behaviour after completion",
-        "tags": "Tags"
+        "tags": "Tags",
+        "icon": {
+          "header": "Icon"
+        }
       },
       "card_editor": {
         "tabs": {
@@ -209,6 +212,14 @@
               "relative_time": "Time remaining until next action",
               "title": "Displayed title of the schedule",
               "state": "Show active schedules on top"
+            }
+          },
+          "display_format_icon": {
+            "heading": "Displayed icon",
+            "options": {
+              "action": "Action",
+              "entity": "Entity",
+              "schedule": "Schedule"
             }
           },
           "display_format_primary": {

@@ -94,11 +94,17 @@ export interface CurrentUser {
   mfa_modules: MFAModule[];
 }
 
+export interface EntityRegistryDisplayEntry {
+  entity_id: string;
+  icon?: string;
+}
+
 export interface HomeAssistant {
   auth: Auth;
   connection: Connection;
   connected: boolean;
   states: HassEntities;
+  entities?: { [entity_id: string]: EntityRegistryDisplayEntry };
   services: HassServices;
   config: HassConfig;
   themes: Themes;
