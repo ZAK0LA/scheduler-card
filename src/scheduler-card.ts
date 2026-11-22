@@ -7,7 +7,7 @@ import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { CardConfig, CustomConfig, EditorMode, Schedule, SchedulerEventData, ScheduleStorageEntry } from './types';
 import { parseTimeBar } from './data/time/parse_time_bar';
 import { HomeAssistant } from './lib/types';
-import { CARD_VERSION, defaultSingleTimerConfig, defaultTimeSchemeConfig } from './const';
+import { CARD_VERSION, defaultIntervalConfig, defaultSingleTimerConfig, defaultTimeSchemeConfig } from './const';
 import { validateConfig } from './data/validate_config';
 import { localize } from './localize/localize';
 import { isIncludedSchedule } from './data/schedule/is_included_schedule';
@@ -354,7 +354,9 @@ export class SchedulerCard extends LitElement {
     let clonedConfig: Schedule =
       this._config.default_editor == EditorMode.Scheme
         ? JSON.parse(JSON.stringify(defaultTimeSchemeConfig))
-        : JSON.parse(JSON.stringify(defaultSingleTimerConfig));
+        : this._config.default_editor == EditorMode.Interval
+          ? JSON.parse(JSON.stringify(defaultIntervalConfig))
+          : JSON.parse(JSON.stringify(defaultSingleTimerConfig));
     const params: SchedulerDialogParams = {
       schedule: { ...clonedConfig, tags: defaultTags.length == 1 ? defaultTags : [] },
       cardConfig: this._config,

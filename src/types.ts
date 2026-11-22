@@ -21,6 +21,7 @@ export interface CardConfig {
 
 export enum EditorMode {
   Single = 'single',
+  Interval = 'interval',
   Scheme = 'scheme',
 }
 export interface ConditionConfig {

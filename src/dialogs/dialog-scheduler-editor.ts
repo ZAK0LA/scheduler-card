@@ -22,7 +22,8 @@ import { isDefined } from '../lib/is_defined';
 import './scheduler-main-panel';
 import './scheduler-options-panel';
 import './generic-dialog';
-import { defaultSingleTimerConfig, defaultTimeSchemeConfig } from '../const';
+import { defaultIntervalConfig, defaultSingleTimerConfig, defaultTimeSchemeConfig } from '../const';
+import { convertToInterval, detectEditorMode } from '../data/schedule/interval';
 
 export type SchedulerDialogParams = {
   schedule: Schedule;
@@ -48,7 +49,7 @@ export class DialogSchedulerEditor extends LitElement {
   set viewMode(mode: EditorMode) {
     this._viewMode = mode;
 
-    if (mode == EditorMode.Single) {
+    if (mode == EditorMode.Single || mode == EditorMode.Interval) {
       const slotIdx = this.schedule.entries[this.selectedEntry!].slots.findIndex((e) => e.actions.length);
       this.selectedSlot = slotIdx >= 0 ? slotIdx : 1;
     }
@@ -65,16 +66,13 @@ export class DialogSchedulerEditor extends LitElement {
     this._panel = 'main';
     this.large = false;
 
-    const isTimeSchemeType =
-      this.schedule.entries[this.selectedEntry!].slots.filter((e) => e.actions.length && isDefined(e.stop)).length >
-        0 ||
-      this.schedule.entries[this.selectedEntry!].slots.filter((e) => e.actions.length).length > 1 ||
-      this.schedule.entries[this.selectedEntry!].slots.length > 3;
-
     const slotIdx = this.schedule.entries[this.selectedEntry!].slots.findIndex((e) => e.actions.length);
     this.selectedSlot = slotIdx >= 0 ? slotIdx : null;
 
-    this.viewMode = isTimeSchemeType ? EditorMode.Scheme : this._params?.cardConfig.default_editor || EditorMode.Single;
+    this.viewMode = detectEditorMode(
+      this.schedule.entries[this.selectedEntry!],
+      this._params?.cardConfig.default_editor
+    );
 
     await this.updateComplete;
   }
@@ -279,54 +277,63 @@ export class DialogSchedulerEditor extends LitElement {
 
   _setViewMode(ev: CustomEvent) {
     const viewMode: EditorMode = ev.detail;
+    if (viewMode == this._viewMode) return;
     const multipleActionsDefined =
       this.schedule.entries[this.selectedEntry!].slots.filter((e) => e.actions.length).length > 1;
 
+    // an untouched new schedule is replaced by the default schedule of the new mode
+    const defaultConfigs: Record<EditorMode, Schedule> = {
+      [EditorMode.Single]: defaultSingleTimerConfig,
+      [EditorMode.Interval]: defaultIntervalConfig,
+      [EditorMode.Scheme]: defaultTimeSchemeConfig,
+    };
+    const isDefaultSchedule = Object.values(defaultConfigs).some((e) =>
+      deepCompare([...this.schedule.entries], [...e.entries])
+    );
+    if (isDefaultSchedule) {
+      this.schedule = { ...this.schedule, entries: JSON.parse(JSON.stringify(defaultConfigs[viewMode].entries)) };
+      this.viewMode = viewMode;
+      return;
+    }
+
     if (viewMode == EditorMode.Scheme) {
       this.viewMode = viewMode;
-      const isDefaultSchedule = deepCompare([...this.schedule.entries], [...defaultSingleTimerConfig.entries]);
-      if (isDefaultSchedule) {
-        this.schedule = { ...this.schedule, entries: [...defaultTimeSchemeConfig.entries] };
-      } else {
-        // Convert any checkpoint slots (stop === undefined, used by single-timer mode) to
-        // duration slots so they display correctly in the scheme editor, which no longer
-        // has a checkbox to toggle checkpoint mode.
-        const hasCheckpoints = this.schedule.entries.some((e) => e.slots.some((s) => s.stop === undefined));
-        if (hasCheckpoints) {
-          this.schedule = {
-            ...this.schedule,
-            entries: this.schedule.entries.map((entry) => ({
-              ...entry,
-              slots: entry.slots.map((slot, idx, arr) => {
-                if (slot.stop !== undefined) return slot;
-                // Use next slot's start as stop; fall back to '00:00:00' which,
-                // when used as a stop time, is treated as the end of the 24-hour day.
-                const nextSlot = arr[idx + 1];
-                return { ...slot, stop: nextSlot ? nextSlot.start : '00:00:00' };
-              }),
-            })),
-          };
-        }
+      // Convert any checkpoint slots (stop === undefined, used by single-timer mode) to
+      // duration slots so they display correctly in the scheme editor, which no longer
+      // has a checkbox to toggle checkpoint mode.
+      const hasCheckpoints = this.schedule.entries.some((e) => e.slots.some((s) => s.stop === undefined));
+      if (hasCheckpoints) {
+        this.schedule = {
+          ...this.schedule,
+          entries: this.schedule.entries.map((entry) => ({
+            ...entry,
+            slots: entry.slots.map((slot, idx, arr) => {
+              if (slot.stop !== undefined) return slot;
+              // Use next slot's start as stop; fall back to '00:00:00' which,
+              // when used as a stop time, is treated as the end of the 24-hour day.
+              const nextSlot = arr[idx + 1];
+              return { ...slot, stop: nextSlot ? nextSlot.start : '00:00:00' };
+            }),
+          })),
+        };
       }
       return;
+    } else if (viewMode == EditorMode.Interval && !multipleActionsDefined) {
+      this._applyInterval();
+      return;
     } else if (viewMode == EditorMode.Single && !multipleActionsDefined) {
-      const isDefaultSchedule = deepCompare([...this.schedule.entries], [...defaultTimeSchemeConfig.entries]);
-      if (isDefaultSchedule) {
-        this.schedule = { ...this.schedule, entries: [...defaultSingleTimerConfig.entries] };
-      } else {
-        const schedule = {
-          ...this.schedule,
-          entries: this.schedule.entries.map((e) => {
-            let idx = e.slots.findIndex((e) => e.actions.length);
-            if (idx < 0) idx = Math.floor(e.slots.length / 2);
-            return <ScheduleEntry>{
-              ...e,
-              slots: e.slots.map((e, i) => (i == idx ? { ...e, stop: undefined } : null)).filter(isDefined),
-            };
-          }),
-        };
-        this.schedule = parseTimeBar(schedule, this.hass);
-      }
+      const schedule = {
+        ...this.schedule,
+        entries: this.schedule.entries.map((e) => {
+          let idx = e.slots.findIndex((e) => e.actions.length);
+          if (idx < 0) idx = Math.floor(e.slots.length / 2);
+          return <ScheduleEntry>{
+            ...e,
+            slots: e.slots.map((e, i) => (i == idx ? { ...e, stop: undefined } : null)).filter(isDefined),
+          };
+        }),
+      };
+      this.schedule = parseTimeBar(schedule, this.hass);
       this.viewMode = viewMode;
       return;
     }
@@ -352,9 +359,25 @@ export class DialogSchedulerEditor extends LitElement {
       });
     }).then((res: boolean) => {
       if (!res) return;
+      if (viewMode == EditorMode.Interval) {
+        this._applyInterval();
+        return;
+      }
       this.schedule = convertSchemeToSingle(this.schedule);
       this.viewMode = viewMode;
     });
+  }
+
+  private _applyInterval() {
+    const [schedule, selectedSlot] = convertToInterval(
+      this.schedule,
+      this.hass,
+      this.selectedEntry!,
+      this.selectedSlot
+    );
+    this.schedule = schedule;
+    this.viewMode = EditorMode.Interval;
+    this.selectedSlot = selectedSlot;
   }
 
   static styles = EditorDialogStyles;

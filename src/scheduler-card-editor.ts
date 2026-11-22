@@ -137,30 +137,27 @@ export class SchedulerCardEditor extends LitElement {
 
         <span>${localize('ui.panel.card_editor.fields.default_editor.heading', this.hass)}</span>
         <div class="two-columns">
-          <div
-            class="column radio"
-            @click=${() => {
-              this._updateConfig({ default_editor: EditorMode.Single });
-            }}
-          >
-            <ha-icon
-              icon="${this._config.default_editor != EditorMode.Scheme ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"
-              class="${this._config.default_editor != EditorMode.Scheme ? 'checked' : ''}"
-            ></ha-icon>
-            <span>${localize('ui.panel.card_editor.fields.default_editor.options.single', this.hass)}</span>
-          </div>
-          <div
-            class="column radio"
-            @click=${() => {
-              this._updateConfig({ default_editor: EditorMode.Scheme });
-            }}
-          >
-            <ha-icon
-              icon="${this._config.default_editor == EditorMode.Scheme ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"
-              class="${this._config.default_editor == EditorMode.Scheme ? 'checked' : ''}"
-            ></ha-icon>
-            <span>${localize('ui.panel.card_editor.fields.default_editor.options.scheme', this.hass)}</span>
-          </div>
+          ${[EditorMode.Single, EditorMode.Interval, EditorMode.Scheme].map((mode) => {
+            // values other than interval and scheme are handled as single mode
+            const checked =
+              mode == EditorMode.Single
+                ? ![EditorMode.Interval, EditorMode.Scheme].includes(this._config!.default_editor!)
+                : this._config!.default_editor == mode;
+            return html`
+              <div
+                class="column radio"
+                @click=${() => {
+                  this._updateConfig({ default_editor: mode });
+                }}
+              >
+                <ha-icon
+                  icon="${checked ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"
+                  class="${checked ? 'checked' : ''}"
+                ></ha-icon>
+                <span>${localize(`ui.panel.card_editor.fields.default_editor.options.${mode}`, this.hass)}</span>
+              </div>
+            `;
+          })}
         </div>
 
         <span slot="heading">${localize('ui.panel.card_editor.fields.sort_by.heading', this.hass)}</span>

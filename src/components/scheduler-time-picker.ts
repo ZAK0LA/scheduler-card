@@ -46,6 +46,9 @@ export class SchedulerTimePicker extends LitElement {
 
   @property({ type: Boolean }) large = false;
 
+  // large mode only: show the mode, before/after, sunrise/sunset and AM/PM buttons below the time
+  @property({ type: Boolean }) stacked = false;
+
   @property({ attribute: false }) stepSize = 10;
 
   protected render(): TemplateResult {
@@ -163,8 +166,9 @@ export class SchedulerTimePicker extends LitElement {
                 : nothing
             }
           </div>
-          ${this._renderSuffix()} ${this.large ? this._renderTimeMode() : nothing}
+          ${this.large && this.stacked ? nothing : html`${this._renderSuffix()} ${this.large ? this._renderTimeMode() : nothing}`}
         </div>
+        ${this.large && this.stacked ? html`<div class="controls">${this._renderTimeMode()} ${this._renderSuffix()}</div>` : nothing}
       </div>
     `;
   }
@@ -468,6 +472,18 @@ export class SchedulerTimePicker extends LitElement {
     :host([large]) div.input {
       width: 100%;
     }
+    :host([large][stacked]) .time-input-wrap {
+      flex-direction: column;
+    }
+    div.controls {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    div.controls div.suffix {
+      flex-grow: 0;
+    }
     div.hours,
     div.minutes {
       display: flex;
@@ -553,7 +569,8 @@ export class SchedulerTimePicker extends LitElement {
       align-items: center;
     }
     :host([large]) div.suffix ha-icon,
-    :host([large]) div.mode ha-icon {
+    :host([large]) div.mode ha-icon,
+    :host([large]) div.controls ha-icon {
       --mdc-icon-size: 32px;
     }
     ha-select {
