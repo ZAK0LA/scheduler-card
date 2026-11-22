@@ -18,6 +18,16 @@ export type DialogSelectWeekdayParams = {
 
 const WeekdayTypeCustom = 'Custom';
 
+const dayTypes = [
+  TWeekday.Daily,
+  TWeekday.Workday,
+  TWeekday.Weekend,
+  TWeekday.RegularWorkday,
+  TWeekday.LastWorkday,
+  TWeekday.RegularDayOff,
+  TWeekday.LastDayOff,
+];
+
 @customElement('dialog-select-weekdays')
 export class DialogSelectWeekdays extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -32,9 +42,7 @@ export class DialogSelectWeekdays extends LitElement {
     this._params = params;
     await this.updateComplete;
 
-    this.selectedWeekdays = this._params.weekdays.filter(
-      (e) => ![TWeekday.Daily, TWeekday.Weekend, TWeekday.Workday].includes(e)
-    );
+    this.selectedWeekdays = this._params.weekdays.filter((e) => !dayTypes.includes(e));
     this.weekdayTypeCustomSelected =
       this.selectedWeekdays.length > 0 && this._params.weekdays.length == this.selectedWeekdays.length;
   }
@@ -95,7 +103,7 @@ export class DialogSelectWeekdays extends LitElement {
   _renderWeekdayOptions() {
     let listOptions: string[] = [];
     if (!this.weekdayTypeCustomSelected) {
-      listOptions = [TWeekday.Daily, TWeekday.Workday, TWeekday.Weekend, WeekdayTypeCustom];
+      listOptions = [...dayTypes, WeekdayTypeCustom];
     } else {
       listOptions = [
         TWeekday.Sunday,
@@ -113,8 +121,7 @@ export class DialogSelectWeekdays extends LitElement {
     }
 
     const isSelectedOption = (item: string) => {
-      if (item == WeekdayTypeCustom)
-        return this._params?.weekdays.some((e) => ![TWeekday.Daily, TWeekday.Weekend, TWeekday.Workday].includes(e));
+      if (item == WeekdayTypeCustom) return this._params?.weekdays.some((e) => !dayTypes.includes(e));
       return this._params?.weekdays.includes(item as TWeekday);
     };
 
@@ -147,7 +154,7 @@ export class DialogSelectWeekdays extends LitElement {
     if (option == WeekdayTypeCustom) {
       weekdays = this.selectedWeekdays;
       this.weekdayTypeCustomSelected = true;
-    } else if ([TWeekday.Daily, TWeekday.Weekend, TWeekday.Workday].includes(option)) {
+    } else if (dayTypes.includes(option)) {
       if (!weekdays.includes(option)) weekdays = [option];
       else if (weekdays.length > 1) weekdays = weekdays.filter((e) => e != option);
       this.weekdayTypeCustomSelected = false;
@@ -172,9 +179,7 @@ export class DialogSelectWeekdays extends LitElement {
 
   backClick() {
     this.weekdayTypeCustomSelected = false;
-    this.selectedWeekdays = this._params!.weekdays.filter(
-      (e) => ![TWeekday.Daily, TWeekday.Weekend, TWeekday.Workday].includes(e)
-    );
+    this.selectedWeekdays = this._params!.weekdays.filter((e) => !dayTypes.includes(e));
   }
 
   static get styles(): CSSResultGroup {
