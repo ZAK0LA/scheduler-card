@@ -116,7 +116,15 @@ assert.deepEqual(
   [0, 1, 0],
   'single mode: only the timeslot without a stop time gets the action'
 );
+assert.deepEqual(
+  applyDefaultAction(clone(defaultSingleTimerConfig), action, 'single').entries[0].slots.map((e) => e.actions.length),
+  [0, 1, 0]
+);
 const scheme = applyDefaultAction(clone(defaultTimeSchemeConfig), action);
+assert.deepEqual(
+  applyDefaultAction(clone(defaultTimeSchemeConfig), action, 'scheme').entries[0].slots.map((e) => e.actions.length),
+  [1, 1, 1]
+);
 assert.deepEqual(
   scheme.entries[0].slots.map((e) => e.actions.length),
   [1, 1, 1],

@@ -1,6 +1,6 @@
 import { computeDomain, computeEntity } from '../../lib/entity';
 import { HomeAssistant } from '../../lib/types';
-import { Action, CardConfig, CustomActionConfig, Schedule } from '../../types';
+import { Action, CardConfig, CustomActionConfig, EditorMode, Schedule, Timeslot } from '../../types';
 import { validateAction } from '../schedule/validate_schedule';
 import { actionSupportsEntity } from './action_supports_entity';
 import { computeActionsForDomain } from './compute_actions_for_domain';
@@ -64,15 +64,17 @@ export const resolveDefaultAction = (hass: HomeAssistant, config: CardConfig): D
   return { action };
 };
 
-// Assigns the default action to a new schedule: in single mode to the timeslot with the action, in scheme mode to every timeslot.
-export const applyDefaultAction = (schedule: Schedule, action: Action): Schedule => ({
+// Assigns the default action to a new schedule: in the single editor to the timeslot without a stop time,
+// in the scheme editor to every timeslot. Without a mode, it is derived from the timeslots.
+export const applyDefaultAction = (schedule: Schedule, action: Action, mode?: EditorMode): Schedule => ({
   ...schedule,
   entries: schedule.entries.map((entry) => {
-    const hasCheckpoint = entry.slots.some((e) => e.stop === undefined);
+    const entryMode = mode || (entry.slots.some((e) => e.stop === undefined) ? EditorMode.Single : EditorMode.Scheme);
+    const receivesAction = (slot: Timeslot) => entryMode == EditorMode.Scheme || slot.stop === undefined;
     return {
       ...entry,
       slots: entry.slots.map((slot) =>
-        slot.actions.length || (hasCheckpoint && slot.stop !== undefined)
+        slot.actions.length || !receivesAction(slot)
           ? { ...slot }
           : { ...slot, actions: [{ ...action, service_data: { ...action.service_data } }] }
       ),
