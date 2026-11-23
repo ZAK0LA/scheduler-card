@@ -41,9 +41,42 @@ export const validateConfig = (config: any) => {
     errors.push(`'show_add_button' must be a boolean`);
   }
 
-  for (const key of ['show_delete_button', 'show_options_tab', 'show_editor_mode_button', 'lock_actions']) {
+  for (const key of [
+    'show_delete_button',
+    'show_options_tab',
+    'show_editor_mode_button',
+    'lock_actions',
+    'show_actions',
+  ]) {
     if (hasKey(config, key) && !isTypeBoolean(config[key])) {
       errors.push(`'${key}' must be a boolean`);
+    }
+  }
+
+  if (
+    hasKey(config, 'default_entity') &&
+    (!isTypeString(config.default_entity) || !/^\w+\.\w+$/.test(config.default_entity))
+  ) {
+    errors.push(`'default_entity' must be an entity ID`);
+  }
+
+  if (hasKey(config, 'default_actions')) {
+    const isActionKey = (obj: any) => (isTypeString(obj) && obj.length > 0) || (isTypeNumber(obj) && obj >= 0);
+    if (!isTypeObject(config.default_actions) || config.default_actions === null) {
+      errors.push(`'default_actions' must be a struct`);
+    } else {
+      Object.entries(config.default_actions).forEach(([domain, value]: [string, any]) => {
+        const valid =
+          isActionKey(value) ||
+          (isTypeObject(value) &&
+            value !== null &&
+            isActionKey(value.action) &&
+            (!hasKey(value, 'data') || (isTypeObject(value.data) && value.data !== null)));
+        if (!valid)
+          errors.push(
+            `in 'default_actions': '${domain}' must be an action name or a struct with 'action' and optional 'data'`
+          );
+      });
     }
   }
 

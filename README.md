@@ -33,6 +33,7 @@
       - [Conditions](#conditions)
     - [Display options](#display-options)
     - [Tags](#tags)
+    - [Default actions](#default-actions)
   - [Translations](#translations)
   - [Tips \& Tricks](#tips--tricks)
     - [Triggering multiple actions on a schedule](#triggering-multiple-actions-on-a-schedule)
@@ -304,7 +305,10 @@ Configuration is not *necessary*, except for defining a set of entities which yo
 | `show_delete_button`     | boolean        | *true*                      | Show the button for deleting schedules.                                                                                                                                                                                                                                                                         |
 | `show_options_tab`       | boolean        | *true*                      | Show the Options tab in the schedule editor.                                                                                                                                                                                                                                                                   |
 | `show_editor_mode_button`| boolean        | *true*                      | Show the button for switching between the Single and Scheme editors. New schedules open in the `default_editor`, existing schedules open in the editor that fits their timeslots.                                                                                                                             |
-| `lock_actions`           | boolean        | *false*                     | Make assigned entities and actions read-only when editing an existing schedule. Timeslots that have an action cannot be removed. Actions can still be chosen when creating a new schedule.                                                                                                                  |
+| `lock_actions`           | boolean        | *false*                     | Make assigned entities and actions read-only when editing an existing schedule. Timeslots that have an action cannot be removed. New schedules get the [default action](#default-actions), read-only. Without a valid default action, actions can still be chosen when creating a new schedule. |
+| `show_actions`           | boolean        | *true*                      | Show the action section of the schedule editor. Hidden actions are read-only, as with `lock_actions`. New schedules get the [default action](#default-actions); without a valid default action they can't be saved. |
+| `default_entity`         | string         | none                        | Entity that new schedules are created for. See [default actions](#default-actions). |
+| `default_actions`        | dictionary     | none                        | Action per domain that new schedules are created with. See [default actions](#default-actions). |
 | `display_options`        | dictionary     | none                        | Configure which properties are displayed in the overview.<br>See [display options](#display-options) for more info.                                                                                                                                                                                           |
 | `tags`                   | string/list    | none                        | Filter schedules on one or more tags.<br>See [tags](#tags) for more info.                                                                                                                                                                                                                                     |
 | `exclude_tags`           | string/list    | none                        | Eliminate items from the schedules filtered by `tags`.<br>See [tags](#tags) for more info.                                                                                                                                                                                                                    |
@@ -699,6 +703,32 @@ The `exclude_tags` function works on top of the `tags` function, so you can elim
 * All schedules which occur in the weekend are assigned with tag `weekend`.
 * By assigning `tags: weekend` and `exlude_tags: holiday` only the weekend schedules which are not part of the holiday program will be shown.
 
+
+### Default actions
+
+New schedules can be created with a preselected entity and action. This is useful on user-facing dashboards, together with `lock_actions` or `show_actions: false`, so that users only have to choose times and weekdays.
+
+```yaml
+type: custom:scheduler-card
+include:
+  - climate.living_room
+default_entity: climate.living_room
+default_actions:
+  climate:
+    action: set_temperature
+    data:
+      temperature: 21
+show_actions: false
+show_options_tab: false
+show_editor_mode_button: false
+```
+
+* `default_entity` must be allowed by `include` and `exclude`.
+* `default_actions` maps a domain to an action. Use the short form `light: turn_on` for actions without settings, or `action` with `data` for actions that have settings, such as the temperature of `climate.set_temperature`. The action must be available for the default entity. Custom actions from [customize](#customize) can be referred to by their service or name. An index into the action list is accepted for compatibility, but action names are preferred, since the list depends on the features of the entity.
+* Without `lock_actions` or `show_actions: false`, the default action is only a preselection that can be changed or removed.
+* With `lock_actions` or `show_actions: false`, a new schedule gets the default entity and action, read-only. In the time scheme editor, a timeslot created by splitting another one gets a copy of its action, or the default action if it had none.
+* Existing schedules keep their actions. The default action only applies to new schedules and new timeslots.
+* With `show_actions: false` and no valid default action, new schedules can't be saved, and the editor shows the reason. The card editor shows a warning in this case.
 
 ## Translations
 

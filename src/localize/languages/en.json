@@ -144,6 +144,14 @@
           "missing_target_entity": "One or more actions are missing a target entity",
           "missing_service_parameter": "One or more actions are missing a required setting",
           "missing_action": "Schedule has no actions"
+        },
+        "default_action_errors": {
+          "no_default_entity": "No default entity is set (default_entity).",
+          "entity_not_included": "The default entity is not included in the card (include / exclude).",
+          "entity_unavailable": "The default entity is unavailable.",
+          "no_default_action": "No default action is set for the domain of the default entity (default_actions).",
+          "action_not_found": "The default action is not available for the default entity.",
+          "action_incomplete": "The default action is missing a required setting (data)."
         }
       },
       "options": {
@@ -216,6 +224,10 @@
           },
           "lock_actions": {
             "heading": "Lock actions"
+          },
+          "show_actions": {
+            "heading": "Show actions",
+            "missing_default": "New schedules can't be saved while actions are hidden:"
           },
           "sort_by": {
             "heading": "Sorting options",

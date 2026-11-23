@@ -21,7 +21,13 @@ export interface CardConfig {
   show_options_tab?: boolean;
   show_editor_mode_button?: boolean;
   lock_actions?: boolean;
+  show_actions?: boolean;
+  default_entity?: string;
+  default_actions?: Record<string, DefaultActionConfig>;
 }
+
+// An action name (or, for compatibility, an index into the action list), optionally with service data.
+export type DefaultActionConfig = string | number | { action: string | number; data?: Record<string, any> };
 
 export enum EditorMode {
   Single = 'single',

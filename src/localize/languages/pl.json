@@ -144,6 +144,14 @@
           "missing_target_entity": "Jednej lub więcej akcji brakuje docelowej encji",
           "missing_service_parameter": "Jednej lub więcej akcji brakuje wymaganego parametru",
           "missing_action": "Harmonogram nie ma żadnych akcji"
+        },
+        "default_action_errors": {
+          "no_default_entity": "Nie ustawiono domyślnej encji (default_entity).",
+          "entity_not_included": "Domyślna encja nie jest uwzględniona w karcie (include / exclude).",
+          "entity_unavailable": "Domyślna encja jest niedostępna.",
+          "no_default_action": "Nie ustawiono domyślnej akcji dla domeny domyślnej encji (default_actions).",
+          "action_not_found": "Domyślna akcja nie jest dostępna dla domyślnej encji.",
+          "action_incomplete": "Domyślnej akcji brakuje wymaganego ustawienia (data)."
         }
       },
       "options": {
@@ -216,6 +224,10 @@
           },
           "lock_actions": {
             "heading": "Zablokuj akcje"
+          },
+          "show_actions": {
+            "heading": "Pokaż akcje",
+            "missing_default": "Przy ukrytych akcjach nie można zapisać nowych harmonogramów:"
           },
           "sort_by": {
             "heading": "Opcje sortowania",
