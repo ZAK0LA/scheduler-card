@@ -88,7 +88,11 @@ export class DialogSchedulerEditor extends LitElement {
     this._defaultActionError = defaultAction.error ? defaultAction : undefined;
     const hasActions = this.schedule.entries.some((e) => e.slots.some((s) => s.actions.length));
     if (!this._params!.editItem && this._defaultAction && !hasActions)
-      this.schedule = applyDefaultAction(this.schedule, this._defaultAction);
+      this.schedule = applyDefaultAction(
+        this.schedule,
+        this._defaultAction,
+        detectEditorMode(this.schedule.entries[this.selectedEntry!], this._params!.cardConfig.default_editor)
+      );
 
     const slotIdx = this.schedule.entries[this.selectedEntry!].slots.findIndex((e) => e.actions.length);
     this.selectedSlot = slotIdx >= 0 ? slotIdx : null;
@@ -234,9 +238,9 @@ export class DialogSchedulerEditor extends LitElement {
   }
 
   // Entries of a new, unchanged schedule, including the default action.
-  private _initialEntries(schedule: Schedule) {
+  private _initialEntries(schedule: Schedule, mode: EditorMode) {
     if (this._params?.editItem || !this._defaultAction) return [...schedule.entries];
-    return applyDefaultAction(schedule, this._defaultAction).entries;
+    return applyDefaultAction(schedule, this._defaultAction, mode).entries;
   }
 
   private async _handleSaveClick(ev: Event) {
@@ -352,11 +356,14 @@ export class DialogSchedulerEditor extends LitElement {
       [EditorMode.Interval]: defaultIntervalConfig,
       [EditorMode.Scheme]: defaultTimeSchemeConfig,
     };
-    const isDefaultSchedule = Object.values(defaultConfigs).some((e) =>
-      deepCompare([...this.schedule.entries], [...e.entries])
+    const isDefaultSchedule = Object.entries(defaultConfigs).some(([mode, e]) =>
+      deepCompare([...this.schedule.entries], this._initialEntries(e, mode as EditorMode))
     );
     if (isDefaultSchedule) {
-      this.schedule = { ...this.schedule, entries: JSON.parse(JSON.stringify(defaultConfigs[viewMode].entries)) };
+      this.schedule = {
+        ...this.schedule,
+        entries: JSON.parse(JSON.stringify(this._initialEntries(defaultConfigs[viewMode], viewMode))),
+      };
       this.viewMode = viewMode;
       return;
     }

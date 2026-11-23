@@ -156,16 +156,18 @@ export const defaultActionErrorMessage = (failure: DefaultActionFailure, hass: H
 };
 
 // Assigns the default action to a new schedule: in the single editor to the timeslot without a stop time,
-// in the scheme editor to every timeslot. Without a mode, it is derived from the timeslots.
+// in the interval editor to the middle timeslot, in the scheme editor to every timeslot. Without a mode, it is derived from the timeslots.
 export const applyDefaultAction = (schedule: Schedule, action: Action, mode?: EditorMode): Schedule => ({
   ...schedule,
   entries: schedule.entries.map((entry) => {
     const entryMode = mode || (entry.slots.some((e) => e.stop === undefined) ? EditorMode.Single : EditorMode.Scheme);
-    const receivesAction = (slot: Timeslot) => entryMode == EditorMode.Scheme || slot.stop === undefined;
+    const receivesAction = (slot: Timeslot, idx: number) =>
+      entryMode == EditorMode.Scheme ||
+      (entryMode == EditorMode.Interval ? idx == Math.floor(entry.slots.length / 2) : slot.stop === undefined);
     return {
       ...entry,
-      slots: entry.slots.map((slot) =>
-        slot.actions.length || !receivesAction(slot) ? { ...slot } : { ...slot, actions: [cloneAction(action)] }
+      slots: entry.slots.map((slot, idx) =>
+        slot.actions.length || !receivesAction(slot, idx) ? { ...slot } : { ...slot, actions: [cloneAction(action)] }
       ),
     };
   }),
