@@ -179,6 +179,8 @@ export class SchedulerTimePicker extends LitElement {
 
   _renderTimeMode() {
     if (!this.hass.states['sun.sun']) return nothing;
+    // without sun-based times a fixed time has no other mode to switch to
+    if (!this.allowSunTimes && this.mode == TimeMode.Fixed) return nothing;
 
     if (!this._modeMenu) {
       const _toggleTimeMode = () => {
