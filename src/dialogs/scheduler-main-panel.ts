@@ -186,6 +186,7 @@ export class SchedulerMainPanel extends LitElement {
             .time=${slot.start}
             @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'start')}
             ?useAmPm=${useAmPm(this.hass.locale)}
+            .allowSunTimes=${this.config.show_sun_mode_button !== false}
             .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
             large
             stacked
@@ -200,6 +201,7 @@ export class SchedulerMainPanel extends LitElement {
             .time=${slot.stop || defaultIntervalStop(slot.start, this.hass)}
             @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'stop')}
             ?useAmPm=${useAmPm(this.hass.locale)}
+            .allowSunTimes=${this.config.show_sun_mode_button !== false}
             .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
             large
             stacked
