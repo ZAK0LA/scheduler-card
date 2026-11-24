@@ -127,7 +127,7 @@ export class SchedulerMainPanel extends LitElement {
                     .time=${this.schedule.entries[this.selectedEntry!].slots[this.selectedSlot!].start}
                     @value-changed=${this._startTimeChanged}
                     ?useAmPm=${useAmPm(this.hass.locale)}
-                    .allowSunTimes=${this.config.allow_sun_times !== false}
+                    .allowSunTimes=${this.config.show_sun_mode_button !== false}
                     .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
                     large
                   >
@@ -216,7 +216,7 @@ export class SchedulerMainPanel extends LitElement {
                   .time=${slot.start}
                   @value-changed=${this._startTimeChanged}
                   ?useAmPm=${useAmPm(this.hass.locale)}
-                  .allowSunTimes=${this.config.allow_sun_times !== false}
+                  .allowSunTimes=${this.config.show_sun_mode_button !== false}
                 >
                 </scheduler-time-picker>
               </div>
@@ -228,7 +228,7 @@ export class SchedulerMainPanel extends LitElement {
                   .time=${endTime}
                   @value-changed=${this._stopTimeChanged}
                   ?useAmPm=${useAmPm(this.hass.locale)}
-                  .allowSunTimes=${this.config.allow_sun_times !== false}
+                  .allowSunTimes=${this.config.show_sun_mode_button !== false}
                 >
                 </scheduler-time-picker>
               </div>

@@ -20,7 +20,7 @@ const restrictionKeys = [
   'show_options_tab',
   'show_editor_mode_button',
   'lock_actions',
-  'allow_sun_times',
+  'show_sun_mode_button',
 ];
 
 // configs without the new options are left untouched
@@ -32,7 +32,7 @@ const restrictedConfig = {
   show_options_tab: false,
   show_editor_mode_button: false,
   lock_actions: true,
-  allow_sun_times: false,
+  show_sun_mode_button: false,
 };
 assert.deepEqual(validateConfig(restrictedConfig), restrictedConfig);
 

@@ -217,8 +217,8 @@
           "lock_actions": {
             "heading": "Lock actions"
           },
-          "allow_sun_times": {
-            "heading": "Allow sun-based times"
+          "show_sun_mode_button": {
+            "heading": "Show sun mode button"
           },
           "sort_by": {
             "heading": "Sorting options",

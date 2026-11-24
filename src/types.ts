@@ -21,7 +21,7 @@ export interface CardConfig {
   show_options_tab?: boolean;
   show_editor_mode_button?: boolean;
   lock_actions?: boolean;
-  allow_sun_times?: boolean;
+  show_sun_mode_button?: boolean;
 }
 
 export enum EditorMode {

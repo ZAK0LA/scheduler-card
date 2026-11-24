@@ -217,8 +217,8 @@
           "lock_actions": {
             "heading": "Zablokuj akcje"
           },
-          "allow_sun_times": {
-            "heading": "Zezwalaj na czasy względem słońca"
+          "show_sun_mode_button": {
+            "heading": "Pokaż przycisk trybu słońca"
           },
           "sort_by": {
             "heading": "Opcje sortowania",
