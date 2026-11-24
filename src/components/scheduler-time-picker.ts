@@ -487,6 +487,10 @@ export class SchedulerTimePicker extends LitElement {
     :host([large][stacked]) .time-input-wrap {
       flex-direction: column;
     }
+    /* on narrow screens the AM/PM button moves below the time instead of being cut off */
+    :host([large][stacked]) div.input {
+      flex-wrap: wrap;
+    }
     div.controls {
       display: flex;
       flex-direction: row;
