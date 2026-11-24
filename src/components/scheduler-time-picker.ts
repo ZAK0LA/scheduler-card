@@ -166,9 +166,17 @@ export class SchedulerTimePicker extends LitElement {
                 : nothing
             }
           </div>
-          ${this.large && this.stacked ? nothing : html`${this._renderSuffix()} ${this.large ? this._renderTimeMode() : nothing}`}
+          ${
+            this.large && this.stacked
+              ? html`<div class="suffix">${this._renderAmPmButton()}</div>`
+              : html`${this._renderSuffix()} ${this.large ? this._renderTimeMode() : nothing}`
+          }
         </div>
-        ${this.large && this.stacked ? html`<div class="controls">${this._renderTimeMode()} ${this._renderSuffix()}</div>` : nothing}
+        ${
+          this.large && this.stacked
+            ? html`<div class="controls">${this._renderTimeMode()} ${this._renderSuffix(false)}</div>`
+            : nothing
+        }
       </div>
     `;
   }
@@ -266,16 +274,28 @@ export class SchedulerTimePicker extends LitElement {
     }
   }
 
-  _renderSuffix() {
+  // large mode only: the AM/PM toggle button
+  _renderAmPmButton() {
+    if (!this.useAmPm || this.mode != TimeMode.Fixed) return nothing;
+
+    const _toggleAmPmClick = () => {
+      const value = convertTo12Hour(this.hours).am_pm;
+      const hours12 = convertTo12Hour(this.hours).hours;
+      this.hours = convertTo24Hour(hours12, value == 'AM' ? AmPmFormat.PM : AmPmFormat.AM);
+
+      this._valueChanged();
+    };
+
+    return html`
+      <ha-button appearance="plain" @click=${_toggleAmPmClick}>
+        <span class="large"> ${convertTo12Hour(this.hours).am_pm == AmPmFormat.AM ? 'AM' : 'PM'} </span>
+      </ha-button>
+    `;
+  }
+
+  // in stacked mode the AM/PM button is rendered next to the time instead (withAmPm = false)
+  _renderSuffix(withAmPm = true) {
     if (this.large) {
-      const _toggleAmPmClick = () => {
-        const value = convertTo12Hour(this.hours).am_pm;
-        const hours12 = convertTo12Hour(this.hours).hours;
-        this.hours = convertTo24Hour(hours12, value == 'AM' ? AmPmFormat.PM : AmPmFormat.AM);
-
-        this._valueChanged();
-      };
-
       const _toggleBeforeAfterClick = () => {
         if (this.hours != 0) this.hours = -this.hours;
         else this.minutes = -this.minutes;
@@ -289,15 +309,7 @@ export class SchedulerTimePicker extends LitElement {
 
       return html`
         <div class="suffix">
-          ${
-            this.useAmPm && this.mode == TimeMode.Fixed
-              ? html`
-                  <ha-button appearance="plain" @click=${_toggleAmPmClick}>
-                    <span class="large"> ${convertTo12Hour(this.hours).am_pm == AmPmFormat.AM ? 'AM' : 'PM'} </span>
-                  </ha-button>
-                `
-              : nothing
-          }
+          ${withAmPm ? this._renderAmPmButton() : nothing}
           ${
             this.mode != TimeMode.Fixed
               ? html`
