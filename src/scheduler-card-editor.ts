@@ -161,6 +161,15 @@ export class SchedulerCardEditor extends LitElement {
               >${localize('ui.panel.card_editor.fields.lock_actions.heading', this.hass)}</ha-switch
             >
           </div>
+          <div class="column">
+            <ha-switch
+              ?checked=${this._config.allow_sun_times !== false}
+              @change=${(ev: Event) => {
+                this._updateConfig({ allow_sun_times: (ev.target as HTMLInputElement).checked });
+              }}
+              >${localize('ui.panel.card_editor.fields.allow_sun_times.heading', this.hass)}</ha-switch
+            >
+          </div>
         </div>
 
         <scheduler-settings-row>

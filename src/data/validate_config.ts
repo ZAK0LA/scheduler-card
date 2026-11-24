@@ -41,7 +41,13 @@ export const validateConfig = (config: any) => {
     errors.push(`'show_add_button' must be a boolean`);
   }
 
-  for (const key of ['show_delete_button', 'show_options_tab', 'show_editor_mode_button', 'lock_actions']) {
+  for (const key of [
+    'show_delete_button',
+    'show_options_tab',
+    'show_editor_mode_button',
+    'lock_actions',
+    'allow_sun_times',
+  ]) {
     if (hasKey(config, key) && !isTypeBoolean(config[key])) {
       errors.push(`'${key}' must be a boolean`);
     }

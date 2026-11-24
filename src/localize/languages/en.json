@@ -217,6 +217,9 @@
           "lock_actions": {
             "heading": "Lock actions"
           },
+          "allow_sun_times": {
+            "heading": "Allow sun-based times"
+          },
           "sort_by": {
             "heading": "Sorting options",
             "description": "Order in which the schedules appear in the card",

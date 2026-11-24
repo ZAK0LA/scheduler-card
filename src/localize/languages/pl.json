@@ -217,6 +217,9 @@
           "lock_actions": {
             "heading": "Zablokuj akcje"
           },
+          "allow_sun_times": {
+            "heading": "Zezwalaj na czasy względem słońca"
+          },
           "sort_by": {
             "heading": "Opcje sortowania",
             "description": "Kolejność, w jakiej harmonogramy pojawiają się na karcie",
