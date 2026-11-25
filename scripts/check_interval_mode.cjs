@@ -232,6 +232,22 @@ check('end time at midnight closes the day', () => {
     ['08:00:00', '00:00:00', 1],
   ]);
 });
+check('end time 24:00 from the picker closes the day', () => {
+  const stop = fixed(24, 0);
+  const [out] = setIntervalTime(interval(), 1, { stop }, hass);
+  assert.deepEqual(times(out), [
+    ['00:00:00', '08:00:00', 0],
+    ['08:00:00', '00:00:00', 1],
+  ]);
+  assert.deepEqual(stop, fixed(24, 0));
+});
+check('end time 24:00 with start 23:59', () => {
+  const [out] = setIntervalTime(interval(), 1, { start: fixed(23, 59), stop: fixed(24, 0) }, hass);
+  assert.deepEqual(times(out), [
+    ['00:00:00', '23:59:00', 0],
+    ['23:59:00', '00:00:00', 1],
+  ]);
+});
 check('end time before start is limited to one minute after start', () => {
   const [out] = setIntervalTime(interval(), 1, { stop: fixed(7, 0) }, hass);
   assert.deepEqual(times(out), [

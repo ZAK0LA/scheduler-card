@@ -159,6 +159,7 @@ export class SchedulerMainPanel extends LitElement {
           ${localize('ui.panel.editor.start_time', this.hass)}:
           <scheduler-time-picker
             .hass=${this.hass}
+            .dayLimit=${'start'}
             .time=${slot.start}
             @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'start')}
             ?useAmPm=${useAmPm(this.hass.locale)}
@@ -172,6 +173,7 @@ export class SchedulerMainPanel extends LitElement {
           ${localize('ui.panel.editor.stop_time', this.hass)}:
           <scheduler-time-picker
             .hass=${this.hass}
+            .dayLimit=${'end'}
             .time=${slot.stop || defaultIntervalStop(slot.start, this.hass)}
             @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'stop')}
             ?useAmPm=${useAmPm(this.hass.locale)}
