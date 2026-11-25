@@ -40,6 +40,7 @@ import { HassEntity } from 'home-assistant-js-websocket';
 
 import '../components/scheduler-timeslot-editor';
 import '../components/scheduler-time-picker';
+import type { SchedulerTimePicker } from '../components/scheduler-time-picker';
 import '../components/scheduler-entity-picker';
 import '../dialogs/dialog-select-weekdays';
 import '../dialogs/dialog-select-action';
@@ -194,6 +195,10 @@ export class SchedulerMainPanel extends LitElement {
     );
     this._updateEntry({ slots: slots });
     if (slotIdxOut != this.selectedSlot) this._updateSelectedSlot(slotIdxOut);
+    // When the time is limited to the same value as before, the .time binding doesn't change and the picker would
+    // keep showing the time that was entered, so it is set directly.
+    const time = slots[slotIdxOut][field];
+    if (time) (ev.currentTarget as SchedulerTimePicker).time = time;
   }
 
   renderActionButtons() {
