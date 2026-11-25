@@ -146,12 +146,14 @@
           "missing_action": "Schedule has no actions"
         },
         "default_action_errors": {
-          "no_default_entity": "No default entity is set (default_entity).",
-          "entity_not_included": "The default entity is not included in the card (include / exclude).",
-          "entity_unavailable": "The default entity is unavailable.",
-          "no_default_action": "No default action is set for the domain of the default entity (default_actions).",
-          "action_not_found": "The default action is not available for the default entity.",
-          "action_incomplete": "The default action is missing a required setting (data)."
+          "no_default_actions": "No default actions are set (default_actions).",
+          "multiple_actions": "The default actions may only differ in entity_id: one service with the same service_data for all entities.",
+          "missing_entity": "The default action {service} has no entity_id.",
+          "action_entity_mismatch": "entity_id {entity} doesn't belong to the default action {service}. For a script, entity_id must be the script itself.",
+          "entity_not_included": "The entity of the default action {entity} is not included in the card (include / exclude).",
+          "entity_unavailable": "The entity of the default action {entity} is unavailable.",
+          "action_not_found": "The default action {service} is not available[ for {entity}].",
+          "action_incomplete": "The default action {service} is missing a required setting (service_data)."
         }
       },
       "options": {

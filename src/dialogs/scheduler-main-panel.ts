@@ -9,6 +9,7 @@ import {
 import { CSSResultGroup, LitElement, PropertyValues, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { Action, CardConfig, EditorMode, Schedule, ScheduleEntry, TWeekday, Time, Timeslot } from '../types';
+import { DefaultActionFailure, defaultActionErrorMessage } from '../data/actions/default_action';
 import { actionConfig } from '../data/actions/action_config';
 import { formatWeekdayDisplay } from '../data/days';
 import { defaultSelectorValue } from '../data/selectors/default_selector_value';
@@ -54,7 +55,7 @@ export class SchedulerMainPanel extends LitElement {
   @property({ attribute: false }) public selectedSlot: number | null = null;
   @property({ type: Boolean }) public isNew = false;
   @property({ attribute: false }) public defaultAction?: Action;
-  @property({ attribute: false }) public defaultActionError?: string;
+  @property({ attribute: false }) public defaultActionError?: DefaultActionFailure;
   @property({ type: Boolean }) large = false;
 
   @state() schedule!: Schedule;
@@ -243,9 +244,7 @@ export class SchedulerMainPanel extends LitElement {
       ${
         this.actionsHidden
           ? this.isNew && !this.defaultAction && this.defaultActionError
-            ? html`<div class="warning">
-                ${localize(`ui.panel.editor.default_action_errors.${this.defaultActionError}`, this.hass)}
-              </div>`
+            ? html`<div class="warning">${defaultActionErrorMessage(this.defaultActionError, this.hass)}</div>`
             : ''
           : html`${localize('ui.panel.editor.action', this.hass)}: ${this._renderActionConfig()}`
       }

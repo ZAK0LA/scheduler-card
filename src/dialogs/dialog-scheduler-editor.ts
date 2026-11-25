@@ -19,8 +19,9 @@ import { hassLocalize } from '../localize/hassLocalize';
 import { convertSchemeToSingle } from '../data/schedule/convert_scheme_to_single';
 import { isDefined } from '../lib/is_defined';
 import {
-  DefaultActionError,
+  DefaultActionFailure,
   applyDefaultAction,
+  defaultActionErrorMessage,
   defaultActionFitsSchedule,
   resolveDefaultAction,
 } from '../data/actions/default_action';
@@ -50,9 +51,9 @@ export class DialogSchedulerEditor extends LitElement {
 
   @state() _panel: 'main' | 'options' = 'main';
 
-  // action from 'default_entity' and 'default_actions', or the reason why there is none
+  // action from 'default_actions', or the reason why there is none
   @state() private _defaultAction?: Action;
-  @state() private _defaultActionError?: DefaultActionError;
+  @state() private _defaultActionError?: DefaultActionFailure;
 
   @state() _viewMode: EditorMode = EditorMode.Single;
   set viewMode(mode: EditorMode) {
@@ -77,7 +78,7 @@ export class DialogSchedulerEditor extends LitElement {
 
     const defaultAction = resolveDefaultAction(this.hass, this._params!.cardConfig);
     this._defaultAction = defaultAction.action;
-    this._defaultActionError = defaultAction.error;
+    this._defaultActionError = defaultAction.error ? defaultAction : undefined;
     const hasActions = this.schedule.entries.some((e) => e.slots.some((s) => s.actions.length));
     if (!this._params!.editItem && this._defaultAction && !hasActions)
       this.schedule = applyDefaultAction(this.schedule, this._defaultAction);
@@ -244,7 +245,7 @@ export class DialogSchedulerEditor extends LitElement {
           confirm: () => resolve(true),
           title: hassLocalize('state_badge.default.error', this.hass),
           description: missingDefault
-            ? localize(`ui.panel.editor.default_action_errors.${this._defaultActionError}`, this.hass)
+            ? defaultActionErrorMessage(this._defaultActionError!, this.hass)
             : localize(`ui.panel.editor.validation_errors.${error}`, this.hass),
           primaryButtonLabel: hassLocalize('ui.common.ok', this.hass),
         };

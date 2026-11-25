@@ -307,8 +307,7 @@ Configuration is not *necessary*, except for defining a set of entities which yo
 | `show_editor_mode_button`| boolean        | *true*                      | Show the button for switching between the Single and Scheme editors. New schedules open in the `default_editor`, existing schedules open in the editor that fits their timeslots.                                                                                                                             |
 | `lock_actions`           | boolean        | *false*                     | Make assigned entities and actions read-only when editing an existing schedule. Timeslots that have an action cannot be removed. New schedules get the [default action](#default-actions), read-only. Without a valid default action, actions can still be chosen when creating a new schedule. |
 | `show_actions`           | boolean        | *true*                      | Show the action section of the schedule editor. Hidden actions are read-only, as with `lock_actions`. New schedules get the [default action](#default-actions); without a valid default action they can't be saved. |
-| `default_entity`         | string         | none                        | Entity that new schedules are created for. See [default actions](#default-actions). |
-| `default_actions`        | dictionary     | none                        | Action per domain that new schedules are created with. See [default actions](#default-actions). |
+| `default_actions`        | list           | none                        | Actions that new schedules are created with, in the format of the `actions` of a timeslot in `scheduler.add`. See [default actions](#default-actions). |
 | `display_options`        | dictionary     | none                        | Configure which properties are displayed in the overview.<br>See [display options](#display-options) for more info.                                                                                                                                                                                           |
 | `tags`                   | string/list    | none                        | Filter schedules on one or more tags.<br>See [tags](#tags) for more info.                                                                                                                                                                                                                                     |
 | `exclude_tags`           | string/list    | none                        | Eliminate items from the schedules filtered by `tags`.<br>See [tags](#tags) for more info.                                                                                                                                                                                                                    |
@@ -706,29 +705,51 @@ The `exclude_tags` function works on top of the `tags` function, so you can elim
 
 ### Default actions
 
-New schedules can be created with a preselected entity and action. This is useful on user-facing dashboards, together with `lock_actions` or `show_actions: false`, so that users only have to choose times and weekdays.
+New schedules can be created with a preselected action. This is useful on user-facing dashboards, together with `lock_actions` or `show_actions: false`, so that users only have to choose times and weekdays.
 
 ```yaml
 type: custom:scheduler-card
 include:
   - climate.living_room
-default_entity: climate.living_room
 default_actions:
-  climate:
-    action: set_temperature
-    data:
+  - service: climate.set_temperature
+    entity_id: climate.living_room
+    service_data:
       temperature: 21
 show_actions: false
 show_options_tab: false
 show_editor_mode_button: false
 ```
 
-* `default_entity` must be allowed by `include` and `exclude`.
-* `default_actions` maps a domain to an action. Use the short form `light: turn_on` for actions without settings, or `action` with `data` for actions that have settings, such as the temperature of `climate.set_temperature`. The action must be available for the default entity. Custom actions from [customize](#customize) can be referred to by their service or name. An index into the action list is accepted for compatibility, but action names are preferred, since the list depends on the features of the entity.
+`default_actions` uses the format of the `actions` of a timeslot in the `scheduler.add` action: `service`, `entity_id` and `service_data`, with one entry per entity. A single entry can also be given without a list.
+
+```yaml
+default_actions:
+  - service: light.turn_on
+    entity_id: light.kitchen
+    service_data:
+      brightness: 128
+  - service: light.turn_on
+    entity_id: light.hall
+    service_data:
+      brightness: 128
+```
+
+* The editor shows one action per timeslot, for one or more entities, so the entries may only differ in `entity_id`.
+* The action must be one that can be chosen in the editor of this card: the entities must be allowed by `include` and `exclude`, and the action must be available for every entity. A custom action from [customize](#customize) is used when its `service` and `service_data` match. Actions hidden with `exclude_actions` can't be used.
+* A script is executed by its own service and has no target. For `include` and `exclude`, the script itself is its entity, as everywhere in the card. `entity_id` is optional; if it is set, it must be the script itself:
+
+  ```yaml
+  include:
+    - script.wake_up
+  default_actions:
+    - service: script.wake_up
+  ```
+
 * Without `lock_actions` or `show_actions: false`, the default action is only a preselection that can be changed or removed.
-* With `lock_actions` or `show_actions: false`, a new schedule gets the default entity and action, read-only. In the time scheme editor, a timeslot created by splitting another one gets a copy of its action, or the default action if it had none.
+* With `lock_actions` or `show_actions: false`, a new schedule gets the default action, read-only. In the time scheme editor, a timeslot created by splitting another one gets a copy of its action, or the default action if it had none.
 * Existing schedules keep their actions. The default action only applies to new schedules and new timeslots.
-* With `show_actions: false` and no valid default action, new schedules can't be saved, and the editor shows the reason. The card editor shows a warning in this case.
+* With `show_actions: false` and no valid default action, new schedules can't be saved, and the editor shows the reason, naming the entity involved. The card editor shows a warning in this case.
 
 ## Translations
 

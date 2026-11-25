@@ -53,31 +53,20 @@ export const validateConfig = (config: any) => {
     }
   }
 
-  if (
-    hasKey(config, 'default_entity') &&
-    (!isTypeString(config.default_entity) || !/^\w+\.\w+$/.test(config.default_entity))
-  ) {
-    errors.push(`'default_entity' must be an entity ID`);
-  }
-
   if (hasKey(config, 'default_actions')) {
-    const isActionKey = (obj: any) => (isTypeString(obj) && obj.length > 0) || (isTypeNumber(obj) && obj >= 0);
-    if (!isTypeObject(config.default_actions) || config.default_actions === null) {
-      errors.push(`'default_actions' must be a struct`);
-    } else {
-      Object.entries(config.default_actions).forEach(([domain, value]: [string, any]) => {
-        const valid =
-          isActionKey(value) ||
-          (isTypeObject(value) &&
-            value !== null &&
-            isActionKey(value.action) &&
-            (!hasKey(value, 'data') || (isTypeObject(value.data) && value.data !== null)));
-        if (!valid)
-          errors.push(
-            `in 'default_actions': '${domain}' must be an action name or a struct with 'action' and optional 'data'`
-          );
-      });
-    }
+    // the format of the actions of a timeslot in scheduler.add, a single entry is accepted without a list
+    const isEntityId = (obj: any) => isTypeString(obj) && /^\w+\.\w+$/.test(obj.trim());
+    const isEntry = (obj: any) =>
+      isTypeObject(obj) &&
+      obj !== null &&
+      isEntityId(obj.service) &&
+      (!hasKey(obj, 'entity_id') || isEntityId(obj.entity_id)) &&
+      (!hasKey(obj, 'service_data') || (isTypeObject(obj.service_data) && obj.service_data !== null));
+    const entries = [config.default_actions].flat();
+    if (!entries.length || !entries.every(isEntry))
+      errors.push(
+        `'default_actions' must be a list of actions with 'service' and optional 'entity_id' and 'service_data'`
+      );
   }
 
   if (hasKey(config, 'show_toggle_switches') && !isTypeBoolean(config.show_toggle_switches)) {

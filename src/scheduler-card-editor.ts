@@ -17,7 +17,7 @@ import {
 } from './const';
 import { loadConfigFromEntityRegistry } from './data/load_config_from_entity_registry';
 import { hassLocalize } from './localize/hassLocalize';
-import { resolveDefaultAction } from './data/actions/default_action';
+import { defaultActionErrorMessage, resolveDefaultAction } from './data/actions/default_action';
 
 import './dialogs/dialog-select-entities';
 import './components/scheduler-entity-picker';
@@ -469,12 +469,12 @@ export class SchedulerCardEditor extends LitElement {
   // New schedules can't be saved with hidden actions unless there is a valid default action.
   private _renderDefaultActionWarning() {
     if (this._config.show_actions !== false || !this.hass) return '';
-    const error = resolveDefaultAction(this.hass, this._config).error;
-    if (!error) return '';
+    const result = resolveDefaultAction(this.hass, this._config);
+    if (!result.error) return '';
     return html`
       <div class="warning">
         ${localize('ui.panel.card_editor.fields.show_actions.missing_default', this.hass)}
-        ${localize(`ui.panel.editor.default_action_errors.${error}`, this.hass)}
+        ${defaultActionErrorMessage(result, this.hass)}
       </div>
     `;
   }
