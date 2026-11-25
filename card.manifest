@@ -1,0 +1,38 @@
+# Recipe for the integration branch of ZAK0LA/scheduler-card.
+# Read top to bottom by integration.sh. Full-line comments only (start with #).
+#
+#   merge   <ref> <upstream PR number or -> [notes]   git merge --no-ff
+#   patch   <file in this repo> [notes]               git am -3, re-exported afterwards
+#   version <suffix>                                  CARD_VERSION = <upstream version>-<suffix>.<N>
+#   build   <path to add> <command...>                run command, commit changes under path
+
+repo      /workspaces/scheduler-card-integration
+branch    integration
+base      upstream/main
+upstream  nielsfaber/scheduler-card
+
+# op     ref / file                                       PR     notes
+merge    origin/fix/1211-editor-labels                    1217
+merge    origin/feature/1159-limited-edit                 1218
+merge    origin/feature/1160-editor-tags                  1221   needs 1159
+merge    origin/feature/1225-default-actions              -      needs 1159
+merge    origin/fix/1223-entity-picker-include            1224
+merge    origin/feature/1222-schedule-icon                -
+merge    origin/feature/562-day-scopes                    -      component PR 562
+merge    origin/feature/1219-interval-mode                -
+patch    patches/card/0001-interval-default-actions.patch        1219 + 1225
+merge    origin/feature/1228-allow-sun-times              -      needs 1159
+patch    patches/card/0002-interval-sun-mode.patch               1219 + 1228
+merge    origin/fix/1229-scheme-time-limit                1230
+merge    origin/fix/1164-exclude-actions                  1232
+merge    origin/feature/1231-default-actions-editor       -      needs 1225
+
+version  zak
+build    dist  npm run rollup
+
+# Left out on purpose:
+#   origin/feature/564-exit-actions      unlikely to be accepted upstream
+#   #1220 scheduler-entity-card          too large for now
+#
+# Accepted upstream (move the line here with the date):
+#   (none yet)

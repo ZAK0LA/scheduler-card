@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ZAK0LA <jaroslaw.zakolski@gmail.com>
+Date: Tue, 24 Nov 2026 20:27:43 +0000
+Subject: [PATCH] integration: use show_sun_mode_button in the interval editor
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/dialogs/scheduler-main-panel.ts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/dialogs/scheduler-main-panel.ts b/src/dialogs/scheduler-main-panel.ts
+index 268962d..2e5360c 100755
+--- a/src/dialogs/scheduler-main-panel.ts
++++ b/src/dialogs/scheduler-main-panel.ts
+@@ -185,6 +185,7 @@ export class SchedulerMainPanel extends LitElement {
+             .time=${slot.start}
+             @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'start')}
+             ?useAmPm=${useAmPm(this.hass.locale)}
++            .allowSunTimes=${this.config.show_sun_mode_button !== false}
+             .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
+             large
+             stacked
+@@ -198,6 +199,7 @@ export class SchedulerMainPanel extends LitElement {
+             .time=${slot.stop || defaultIntervalStop(slot.start, this.hass)}
+             @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'stop')}
+             ?useAmPm=${useAmPm(this.hass.locale)}
++            .allowSunTimes=${this.config.show_sun_mode_button !== false}
+             .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
+             large
+             stacked

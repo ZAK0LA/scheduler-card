@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ZAK0LA <jaroslaw.zakolski@gmail.com>
+Date: Mon, 23 Nov 2026 20:42:11 +0000
+Subject: [PATCH] integration: apply default actions in the interval editor
+
+Combines #1225 (default actions) with #1219 (interval editor): a new
+interval schedule gets the default action in its interval timeslot only,
+and switching between untouched new schedules keeps the default action.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/data/actions/default_action.ts     | 10 ++++++----
+ src/dialogs/dialog-scheduler-editor.ts | 19 +++++++++++++------
+ 2 files changed, 19 insertions(+), 10 deletions(-)
+
+diff --git a/src/data/actions/default_action.ts b/src/data/actions/default_action.ts
+index 927a373..5e45abe 100644
+--- a/src/data/actions/default_action.ts
++++ b/src/data/actions/default_action.ts
+@@ -156,16 +156,18 @@ export const defaultActionErrorMessage = (failure: DefaultActionFailure, hass: H
+ };
+ 
+ // Assigns the default action to a new schedule: in the single editor to the timeslot without a stop time,
+-// in the scheme editor to every timeslot. Without a mode, it is derived from the timeslots.
++// in the interval editor to the middle timeslot, in the scheme editor to every timeslot. Without a mode, it is derived from the timeslots.
+ export const applyDefaultAction = (schedule: Schedule, action: Action, mode?: EditorMode): Schedule => ({
+   ...schedule,
+   entries: schedule.entries.map((entry) => {
+     const entryMode = mode || (entry.slots.some((e) => e.stop === undefined) ? EditorMode.Single : EditorMode.Scheme);
+-    const receivesAction = (slot: Timeslot) => entryMode == EditorMode.Scheme || slot.stop === undefined;
++    const receivesAction = (slot: Timeslot, idx: number) =>
++      entryMode == EditorMode.Scheme ||
++      (entryMode == EditorMode.Interval ? idx == Math.floor(entry.slots.length / 2) : slot.stop === undefined);
+     return {
+       ...entry,
+-      slots: entry.slots.map((slot) =>
+-        slot.actions.length || !receivesAction(slot) ? { ...slot } : { ...slot, actions: [cloneAction(action)] }
++      slots: entry.slots.map((slot, idx) =>
++        slot.actions.length || !receivesAction(slot, idx) ? { ...slot } : { ...slot, actions: [cloneAction(action)] }
+       ),
+     };
+   }),
+diff --git a/src/dialogs/dialog-scheduler-editor.ts b/src/dialogs/dialog-scheduler-editor.ts
+index ee67f8f..d203106 100755
+--- a/src/dialogs/dialog-scheduler-editor.ts
++++ b/src/dialogs/dialog-scheduler-editor.ts
+@@ -88,7 +88,11 @@ export class DialogSchedulerEditor extends LitElement {
+     this._defaultActionError = defaultAction.error ? defaultAction : undefined;
+     const hasActions = this.schedule.entries.some((e) => e.slots.some((s) => s.actions.length));
+     if (!this._params!.editItem && this._defaultAction && !hasActions)
+-      this.schedule = applyDefaultAction(this.schedule, this._defaultAction);
++      this.schedule = applyDefaultAction(
++        this.schedule,
++        this._defaultAction,
++        detectEditorMode(this.schedule.entries[this.selectedEntry!], this._params!.cardConfig.default_editor)
++      );
+ 
+     const slotIdx = this.schedule.entries[this.selectedEntry!].slots.findIndex((e) => e.actions.length);
+     this.selectedSlot = slotIdx >= 0 ? slotIdx : null;
+@@ -234,9 +238,9 @@ export class DialogSchedulerEditor extends LitElement {
+   }
+ 
+   // Entries of a new, unchanged schedule, including the default action.
+-  private _initialEntries(schedule: Schedule) {
++  private _initialEntries(schedule: Schedule, mode: EditorMode) {
+     if (this._params?.editItem || !this._defaultAction) return [...schedule.entries];
+-    return applyDefaultAction(schedule, this._defaultAction).entries;
++    return applyDefaultAction(schedule, this._defaultAction, mode).entries;
+   }
+ 
+   private async _handleSaveClick(ev: Event) {
+@@ -352,11 +356,14 @@ export class DialogSchedulerEditor extends LitElement {
+       [EditorMode.Interval]: defaultIntervalConfig,
+       [EditorMode.Scheme]: defaultTimeSchemeConfig,
+     };
+-    const isDefaultSchedule = Object.values(defaultConfigs).some((e) =>
+-      deepCompare([...this.schedule.entries], [...e.entries])
++    const isDefaultSchedule = Object.entries(defaultConfigs).some(([mode, e]) =>
++      deepCompare([...this.schedule.entries], this._initialEntries(e, mode as EditorMode))
+     );
+     if (isDefaultSchedule) {
+-      this.schedule = { ...this.schedule, entries: JSON.parse(JSON.stringify(defaultConfigs[viewMode].entries)) };
++      this.schedule = {
++        ...this.schedule,
++        entries: JSON.parse(JSON.stringify(this._initialEntries(defaultConfigs[viewMode], viewMode))),
++      };
+       this.viewMode = viewMode;
+       return;
+     }

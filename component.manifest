@@ -1,0 +1,18 @@
+# Recipe for the integration branch of ZAK0LA/scheduler-component.
+# Same format as card.manifest.
+
+repo      /workspaces/scheduler-component-integration
+branch    integration
+base      upstream/main
+upstream  nielsfaber/scheduler-component
+
+# op     ref / file                                       PR     notes
+merge    origin/fix/210-holiday-aware-next-trigger        561
+merge    origin/feature/562-day-scopes                    -      contains 210
+merge    origin/feature/563-active-attribute              -
+
+# Left out on purpose:
+#   origin/feature/564-exit-actions      unlikely to be accepted upstream
+#
+# Accepted upstream (move the line here with the date):
+#   (none yet)
