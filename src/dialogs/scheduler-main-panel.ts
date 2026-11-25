@@ -195,8 +195,13 @@ export class SchedulerMainPanel extends LitElement {
       { [field]: value },
       this.hass
     );
+    // Select the new slot index before the slots are replaced: a whole-day interval has a single slot, so the old
+    // index may not exist in the new slots when the panel renders before the dialog passes the index back.
+    if (slotIdxOut != this.selectedSlot) {
+      this._updateSelectedSlot(slotIdxOut);
+      this.selectedSlot = slotIdxOut;
+    }
     this._updateEntry({ slots: slots });
-    if (slotIdxOut != this.selectedSlot) this._updateSelectedSlot(slotIdxOut);
     // When the time is limited to the same value as before, the .time binding doesn't change and the picker would
     // keep showing the time that was entered, so it is set directly.
     const time = slots[slotIdxOut][field];

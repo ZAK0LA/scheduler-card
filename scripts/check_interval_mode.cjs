@@ -12,6 +12,7 @@ require.extensions['.ts'] = (module, filename) => {
   module._compile(outputText, filename);
 };
 const { convertToInterval, detectEditorMode, setIntervalTime } = require('../src/data/schedule/interval.ts');
+const { parseTimeBar } = require('../src/data/time/parse_time_bar.ts');
 
 const hass = { locale: { language: 'en', time_format: '24' }, states: {} };
 const conditions = { type: 'or', items: [], track_changes: false };
@@ -247,6 +248,21 @@ check('end time 24:00 with start 23:59', () => {
     ['00:00:00', '23:59:00', 0],
     ['23:59:00', '00:00:00', 1],
   ]);
+});
+check('start 00:00 and end 24:00 is the whole day', () => {
+  const [out, idx] = setIntervalTime(interval(), 1, { start: fixed(0, 0), stop: fixed(24, 0) }, hass);
+  assert.deepEqual(times(out), [['00:00:00', '00:00:00', 1]]);
+  assert.equal(idx, 0);
+});
+check('end 24:00, then start 00:00 is the whole day', () => {
+  const [slots, idx] = setIntervalTime(interval(), 1, { stop: fixed(24, 0) }, hass);
+  const [out] = setIntervalTime(slots, idx, { start: fixed(0, 0) }, hass);
+  assert.deepEqual(times(out), [['00:00:00', '00:00:00', 1]]);
+});
+check('a stored whole-day timeslot opens unchanged in interval mode', () => {
+  const s = parseTimeBar(schedule([slot('00:00:00', '00:00:00', [action])]), hass);
+  assert.deepEqual(times(s.entries[0].slots), [['00:00:00', '00:00:00', 1]]);
+  assert.equal(detectEditorMode(s.entries[0]), 'interval');
 });
 check('end time before start is limited to one minute after start', () => {
   const [out] = setIntervalTime(interval(), 1, { stop: fixed(7, 0) }, hass);

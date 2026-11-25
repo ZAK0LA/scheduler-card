@@ -168,7 +168,8 @@ export class SchedulerTimeslotEditor extends LitElement {
       let ts_stop: number;
       if (e.stop !== undefined) {
         ts_stop = computeTimestamp(e.stop, this.hass);
-        if (!ts_stop && ts_start) ts_stop = SEC_PER_DAY;
+        // a stop time of 00:00 is the end of the day (00:00 - 00:00 is the whole day)
+        if (!ts_stop) ts_stop = SEC_PER_DAY;
       } else {
         // Slot without a stop time: visually span to the next slot's start
         const nextSlot = slots[i + 1];
