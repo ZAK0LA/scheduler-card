@@ -9,10 +9,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/dialogs/scheduler-main-panel.ts b/src/dialogs/scheduler-main-panel.ts
-index 268962d..2e5360c 100755
+index bf36a59..decdbc7 100755
 --- a/src/dialogs/scheduler-main-panel.ts
 +++ b/src/dialogs/scheduler-main-panel.ts
-@@ -185,6 +185,7 @@ export class SchedulerMainPanel extends LitElement {
+@@ -186,6 +186,7 @@ export class SchedulerMainPanel extends LitElement {
              .time=${slot.start}
              @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'start')}
              ?useAmPm=${useAmPm(this.hass.locale)}
@@ -20,7 +20,7 @@ index 268962d..2e5360c 100755
              .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
              large
              stacked
-@@ -198,6 +199,7 @@ export class SchedulerMainPanel extends LitElement {
+@@ -200,6 +201,7 @@ export class SchedulerMainPanel extends LitElement {
              .time=${slot.stop || defaultIntervalStop(slot.start, this.hass)}
              @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'stop')}
              ?useAmPm=${useAmPm(this.hass.locale)}
