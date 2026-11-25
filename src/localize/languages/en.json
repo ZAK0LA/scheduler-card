@@ -231,6 +231,13 @@
             "heading": "Show actions",
             "missing_default": "New schedules can't be saved while actions are hidden:"
           },
+          "actions": {
+            "heading": "Actions"
+          },
+          "default_actions": {
+            "heading": "Default action for new schedules",
+            "add": "Add default action"
+          },
           "sort_by": {
             "heading": "Sorting options",
             "description": "Order in which the schedules appear in the card",

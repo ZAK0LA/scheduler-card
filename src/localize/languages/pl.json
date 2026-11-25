@@ -231,6 +231,13 @@
             "heading": "Pokaż akcje",
             "missing_default": "Przy ukrytych akcjach nie można zapisać nowych harmonogramów:"
           },
+          "actions": {
+            "heading": "Akcje"
+          },
+          "default_actions": {
+            "heading": "Domyślna akcja dla nowych harmonogramów",
+            "add": "Dodaj domyślną akcję"
+          },
           "sort_by": {
             "heading": "Opcje sortowania",
             "description": "Kolejność, w jakiej harmonogramy pojawiają się na karcie",

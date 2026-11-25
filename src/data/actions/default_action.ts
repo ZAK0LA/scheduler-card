@@ -141,6 +141,26 @@ export const resolveDefaultAction = (hass: HomeAssistant, config: CardConfig): D
   return { action };
 };
 
+// An action that still needs its entity, which 'default_actions' can't be without (scripts have none).
+export const defaultActionMissingEntity = (action: Action) =>
+  !serviceIsEntity(computeDomain(action.service)) && ![action.target?.entity_id || []].flat().length;
+
+// Writes an action as 'default_actions', in the format of the actions of a timeslot in scheduler.add:
+// one entry per entity, 'service_data' only when it isn't empty, and no 'entity_id' for a script.
+// Every entry gets its own copy of the data, so that the YAML of the card has no anchors.
+export const defaultActionsFromAction = (action: Action): DefaultActionConfig[] => {
+  const service = action.service;
+  const entities = serviceIsEntity(computeDomain(service)) ? [] : [action.target?.entity_id || []].flat();
+  const entry = (entity?: string): DefaultActionConfig => ({
+    service,
+    ...(entity ? { entity_id: entity } : {}),
+    ...(Object.keys(action.service_data || {}).length
+      ? { service_data: JSON.parse(JSON.stringify(action.service_data)) }
+      : {}),
+  });
+  return entities.length ? entities.map((e) => entry(e)) : [entry()];
+};
+
 // The message for a missing default action, naming the service and the entity involved.
 // Parts in [brackets] are left out when their placeholder has no value.
 export const defaultActionErrorMessage = (failure: DefaultActionFailure, hass: HomeAssistant) => {

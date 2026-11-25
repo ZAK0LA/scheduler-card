@@ -56,7 +56,10 @@ export class SchedulerActionEditor extends LitElement {
   @property({ attribute: false }) public entityFilter?: string[];
   // target that an action chosen in the dialog gets, if it has a target
   @property({ attribute: false }) public keepTarget?: Action['target'];
+  // offers 'show all' in the action dialog, which ignores include / exclude
+  @property({ type: Boolean }) public allowShowAll = true;
   @property() public addLabel?: string;
+  @property() public addIcon = 'mdi:plus';
 
   render() {
     const action = this.action;
@@ -68,7 +71,7 @@ export class SchedulerActionEditor extends LitElement {
               ? ''
               : html`
                   <ha-button appearance="plain" @click=${this.showActionDialog}>
-                    <ha-icon slot="start" icon="mdi:plus"></ha-icon>
+                    <ha-icon slot="start" icon=${this.addIcon}></ha-icon>
                     ${this.addLabel || localize('ui.panel.editor.add_action', this.hass)}
                   </ha-button>
                 `
@@ -202,6 +205,7 @@ export class SchedulerActionEditor extends LitElement {
         domainFilter: this.domainFilter,
         entityFilter: this.entityFilter,
         cardConfig: this.config,
+        allowShowAll: this.allowShowAll,
       };
 
       fireEvent(ev.target as HTMLElement, 'show-dialog', {

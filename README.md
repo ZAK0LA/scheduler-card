@@ -749,7 +749,15 @@ default_actions:
 * Without `lock_actions` or `show_actions: false`, the default action is only a preselection that can be changed or removed.
 * With `lock_actions` or `show_actions: false`, a new schedule gets the default action, read-only. In the time scheme editor, a timeslot created by splitting another one gets a copy of its action, or the default action if it had none.
 * Existing schedules keep their actions. The default action only applies to new schedules and new timeslots.
-* With `show_actions: false` and no valid default action, new schedules can't be saved, and the editor shows the reason, naming the entity involved. The card editor shows a warning in this case.
+* With `show_actions: false` and no valid default action, new schedules can't be saved, and the editor shows the reason, naming the entity involved. The card editor shows the reason as well.
+
+#### Choosing the default action in the card editor
+
+The default action can also be chosen in the **Actions** section of the card editor, next to the `lock_actions` and `show_actions` switches. It works like the action of a timeslot in the schedule editor: choose the action, then the entities and the settings of the action. The action dialog lists the actions allowed by `include`, `exclude` and `exclude_actions`.
+
+The card editor writes `default_actions` in the format above: one entry per entity, `service_data` only when the action has settings, and no `entity_id` for a script. Deleting the action removes `default_actions` from the configuration. An action that needs an entity is written once the entity is chosen.
+
+`default_actions` written in YAML is shown in the card editor and is only rewritten when it is changed there. If it isn't valid, the card editor shows the reason and leaves it unchanged, with buttons to choose another action or to delete it.
 
 ## Translations
 
