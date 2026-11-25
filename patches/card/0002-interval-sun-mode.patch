@@ -9,7 +9,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/dialogs/scheduler-main-panel.ts b/src/dialogs/scheduler-main-panel.ts
-index bf36a59..decdbc7 100755
+index 75a20fd..07eb59c 100755
 --- a/src/dialogs/scheduler-main-panel.ts
 +++ b/src/dialogs/scheduler-main-panel.ts
 @@ -186,6 +186,7 @@ export class SchedulerMainPanel extends LitElement {
