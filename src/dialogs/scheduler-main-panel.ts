@@ -1,51 +1,28 @@
-import {
-  mdiChevronLeft,
-  mdiChevronRight,
-  mdiDotsVertical,
-  mdiPencil,
-  mdiShapeRectanglePlus,
-  mdiTrashCanOutline,
-} from '@mdi/js';
+import { mdiChevronLeft, mdiChevronRight, mdiPencil, mdiShapeRectanglePlus, mdiTrashCanOutline } from '@mdi/js';
 import { CSSResultGroup, LitElement, PropertyValues, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { Action, CardConfig, EditorMode, Schedule, ScheduleEntry, TWeekday, Time, Timeslot } from '../types';
 import { DefaultActionFailure, defaultActionErrorMessage } from '../data/actions/default_action';
 import { actionConfig } from '../data/actions/action_config';
 import { formatWeekdayDisplay } from '../data/days';
-import { defaultSelectorValue } from '../data/selectors/default_selector_value';
-import { isSupportedSelector } from '../data/selectors/is_supported_selector';
-import { selectorConfig } from '../data/selectors/selector_config';
-import { NumberSelector, Selector } from '../lib/selector';
-import { DialogSelectActionParams } from './dialog-select-action';
 import { DialogSelectWeekdayParams } from './dialog-select-weekdays';
 
-import { computeDomain } from '../lib/entity';
 import { computeTimestamp } from '../data/time/compute_timestamp';
 import { HomeAssistant } from '../lib/types';
 import { localize } from '../localize/localize';
 import { insertTimeslot } from '../data/schedule/insert_timeslot';
 import { removeTimeslot } from '../data/schedule/remove_timeslot';
-import { formatFieldDisplay } from '../data/format/format_field_display';
-import { formatActionDisplay } from '../data/format/format_action_display';
-import { computeActionIcon } from '../data/format/compute_action_icon';
 import { fireEvent } from '../lib/fire_event';
 import { useAmPm } from '../lib/use_am_pm';
-import { capitalizeFirstLetter } from '../lib/capitalize_first_letter';
-import { hassLocalize } from '../localize/hassLocalize';
 import { isDefined } from '../lib/is_defined';
+import { computeActionDialogFilter } from '../components/scheduler-action-editor';
 import { moveTimeslot } from '../data/schedule/move_timeslot';
-import { computeEntityDisplay } from '../data/format/compute_entity_display';
 import { DEFAULT_TIME_STEP } from '../const';
-import { HassEntity } from 'home-assistant-js-websocket';
 
 import '../components/scheduler-timeslot-editor';
 import '../components/scheduler-time-picker';
-import '../components/scheduler-entity-picker';
+import '../components/scheduler-action-editor';
 import '../dialogs/dialog-select-weekdays';
-import '../dialogs/dialog-select-action';
-import '../components/scheduler-collapsible-section';
-import '../components/scheduler-settings-row';
-import '../components/scheduler-combo-selector';
 
 @customElement('scheduler-main-panel')
 export class SchedulerMainPanel extends LitElement {
@@ -252,187 +229,41 @@ export class SchedulerMainPanel extends LitElement {
   }
 
   _renderActionConfig() {
-    const slot: Timeslot = { ...this.schedule.entries[this.selectedEntry!].slots[this.selectedSlot!] };
+    const slots = this.schedule.entries[this.selectedEntry!].slots;
+    const slot: Timeslot = slots[this.selectedSlot!];
     const action = slot.actions.length ? slot.actions[0] : undefined;
-    if (!action)
-      return html`
-        <div>
-          ${
-            this.actionsLocked
-              ? ''
-              : html`
-                  <ha-button appearance="plain" @click=${this._showActionDialog}>
-                    <ha-icon slot="start" icon="mdi:plus"></ha-icon>
-                    ${localize('ui.panel.editor.add_action', this.hass)}
-                  </ha-button>
-                `
-          }
-        </div>
-      `;
 
-    const config = actionConfig(action, this.config.customize, this.hass);
-    const domain = config.target?.domain || computeDomain(action.service);
-
-    const hasFixedEntity =
-      isDefined(config?.target?.entity_id) ||
-      this.schedule.entries[this.selectedEntry!].slots.some(
-        (e) =>
-          e.actions.length && isDefined(actionConfig(e.actions[0], this.config.customize, this.hass)?.target?.entity_id)
-      );
-
-    if (config === undefined) return html``;
-
-    //if (!config || !config.fields) return html``;
-    const fields = Object.keys(config.fields || {}).filter((e) =>
-      isSupportedSelector(action, e, this.hass!, this.config.customize)
+    // the entity is shared by all timeslots of the entry, so it can't be changed if another timeslot fixes it
+    const entityFixed = slots.some(
+      (e) =>
+        e.actions.length && isDefined(actionConfig(e.actions[0], this.config.customize, this.hass)?.target?.entity_id)
+    );
+    // a new action keeps the entity of the other timeslots, and the action dialog is limited to the actions in use
+    const keepTarget = slots.find((e) => (e.actions.length ? e.actions[0].target?.entity_id : undefined))?.actions[0]
+      .target;
+    const { domainFilter, entityFilter } = computeActionDialogFilter(
+      this.schedule.entries.map((entry) => entry.slots.map((e) => e.actions).flat()).flat()
     );
 
-    let heading = '';
-
-    let entityIds = [action.target?.entity_id || []].flat();
-    if (!entityIds.length && ['notify', 'script'].includes(domain)) entityIds = [action.service];
-
-    if (entityIds.length) {
-      heading += entityIds.map((e) => computeEntityDisplay(e, this.hass, this.config.customize)).join(', ');
-      heading += ': ';
-    }
-    heading += formatActionDisplay(action, this.hass, this.config.customize, false, true);
-
     return html`
-      <scheduler-collapsible-section ?expanded=${true} ?disabled=${true}>
-        <div slot="header" class="header">
-          <ha-icon slot="icon" icon="${computeActionIcon(action, this.config.customize)}"></ha-icon>
-          <span>${capitalizeFirstLetter(heading)}</span>
-        </div>
-
-        ${
-          this.actionsLocked
-            ? ''
-            : html`
-                <ha-dropdown
-                  slot="contextMenu"
-                  @wa-select=${this._actionItemOptionsClick}
-                  @wa-after-hide=${(ev: Event) => {
-                    ((ev.target as HTMLElement).firstElementChild as HTMLElement).blur();
-                  }}
-                  placement="bottom-end"
-                >
-                  <ha-icon-button slot="trigger" .path=${mdiDotsVertical}> </ha-icon-button>
-                  <ha-dropdown-item value="change_type">
-                    <ha-icon icon="mdi:pencil"></ha-icon>
-                    ${hassLocalize('ui.panel.lovelace.editor.card.conditional.change_type', this.hass)}
-                  </ha-dropdown-item>
-                  <ha-dropdown-item variant="danger" value="delete">
-                    <ha-icon icon="mdi:delete"></ha-icon>
-                    ${hassLocalize('ui.common.delete', this.hass)}
-                  </ha-dropdown-item>
-                </ha-dropdown>
-              `
-        }
-
-        <div slot="content">
-          ${
-            config.target
-              ? html`
-                  <scheduler-settings-row>
-                    <span slot="heading">${hassLocalize('ui.components.entity.entity-picker.entity', this.hass)}</span>
-                    <scheduler-entity-picker
-                      .hass=${this.hass}
-                      .config=${this.config}
-                      .domain=${domain}
-                      .filterFunc=${(stateObj: HassEntity) => (config.supported_features ? ((stateObj.attributes.supported_features || 0) & config.supported_features) > 0 : true)}
-                      @value-changed=${this._selectEntity}
-                      .value=${[action.target?.entity_id || []].flat()}
-                      ?multiple=${true}
-                      ?disabled=${hasFixedEntity || this.actionsLocked}
-                    >
-                    </scheduler-entity-picker>
-                  </scheduler-settings-row>
-                `
-              : ''
-          }
-          ${fields.map((field) => {
-            const selector = selectorConfig(
-              action.service,
-              action.target?.entity_id,
-              field,
-              this.hass!,
-              this.config.customize
-            );
-            if (selector === null) return '';
-            const optional: boolean | undefined =
-              config.fields![field].optional || ((selector as NumberSelector).number || {}).optional;
-            const checked = optional ? Object.keys(action.service_data).includes(field) : true;
-            return html`
-              <scheduler-settings-row ?showPrefix=${optional}>
-                ${
-                  optional
-                    ? html`
-                        <ha-checkbox
-                          slot="prefix"
-                          ?checked=${checked}
-                          ?disabled=${this.actionsLocked}
-                          @change=${(ev: Event) => this._toggleOptionalField(ev, field, selector)}
-                        >
-                        </ha-checkbox>
-                      `
-                    : ''
-                }
-                <span slot="heading"> ${formatFieldDisplay(action, field, this.hass, this.config.customize)} </span>
-                <scheduler-combo-selector
-                  .hass=${this.hass}
-                  .config=${selector}
-                  ?disabled=${!checked || this.actionsLocked}
-                  .value=${Object.keys(action.service_data).includes(field) ? action.service_data[field] : undefined}
-                  @value-changed=${(ev: CustomEvent) => this._selectField(field, ev)}
-                >
-                </scheduler-combo-selector>
-              </scheduler-settings-row>
-            `;
-          })}
-        </div>
-      </scheduler-collapsible-section>
+      <scheduler-action-editor
+        .hass=${this.hass}
+        .config=${this.config}
+        .action=${action}
+        ?locked=${this.actionsLocked}
+        ?entityFixed=${entityFixed}
+        .domainFilter=${domainFilter}
+        .entityFilter=${entityFilter}
+        .keepTarget=${keepTarget}
+        @action-changed=${(ev: CustomEvent) => this._updateSlot({ actions: ev.detail.action ? [ev.detail.action] : [] })}
+        @entity-changed=${this._selectEntity}
+      >
+      </scheduler-action-editor>
     `;
   }
 
-  _selectField(field: string, ev: CustomEvent) {
-    const value = ev.detail.value;
-
-    const slot: Timeslot = { ...this.schedule.entries[this.selectedEntry!].slots[this.selectedSlot!] };
-    const action: Action =
-      value !== undefined
-        ? {
-            ...slot.actions[0],
-            service_data: {
-              ...slot.actions[0].service_data,
-              [field]: value,
-            },
-          }
-        : {
-            ...slot.actions[0],
-            service_data: Object.fromEntries(
-              Object.entries(slot.actions[0].service_data).filter(([key]) => key != field)
-            ),
-          };
-    this._updateSlot({ actions: [action] });
-  }
-
-  _toggleOptionalField(ev: Event, field: string, selector: Selector) {
-    const checked = (ev.target as HTMLInputElement).checked;
-    const value = checked ? defaultSelectorValue(selector) : undefined;
-    if (checked) {
-      this._selectField(
-        field,
-        new CustomEvent('value-changed', { detail: { value: isDefined(value) ? value : null } })
-      );
-    } else {
-      this._selectField(field, new CustomEvent('value-changed', { detail: { value: undefined } }));
-    }
-  }
-
   _selectEntity(ev: CustomEvent) {
-    const entity = ev.detail.value as string | string[] | undefined;
-    if (!entity) return;
+    const entity = ev.detail.entity_id as string | string[];
 
     this.schedule.entries[this.selectedEntry!].slots.forEach((slot, idx) => {
       if (!slot.actions.length) return;
@@ -499,62 +330,6 @@ export class SchedulerMainPanel extends LitElement {
       if (!res) return;
       this._updateEntry({ weekdays: res });
     });
-  }
-
-  async _showActionDialog(ev: Event) {
-    let filteredDomains: string[] = [];
-    let filteredEntities: string[] = [];
-
-    this.schedule.entries.forEach((entry) => {
-      entry.slots.forEach((slot) => {
-        slot.actions.forEach((action) => {
-          filteredEntities = [...filteredEntities, ...[action.target?.entity_id || []].flat()];
-          filteredDomains = [
-            ...filteredDomains,
-            ...[computeDomain(action.service), ...[action.target?.entity_id || []].flat()].map(computeDomain),
-          ];
-        });
-      });
-    });
-    filteredDomains = [...new Set(filteredDomains)];
-    filteredEntities = [...new Set(filteredEntities)];
-
-    await new Promise<Action | null>((resolve) => {
-      const params: DialogSelectActionParams = {
-        cancel: () => resolve(null),
-        confirm: (out: Action) => resolve(out),
-        domainFilter: filteredDomains.length ? filteredDomains : undefined,
-        entityFilter: filteredEntities.length ? filteredEntities : undefined,
-        cardConfig: this.config,
-      };
-
-      fireEvent(ev.target as HTMLElement, 'show-dialog', {
-        dialogTag: 'dialog-select-action',
-        dialogImport: () => import('./dialog-select-action'),
-        dialogParams: params,
-      });
-    }).then((res: Action | null) => {
-      if (!res) return;
-      const slot: Timeslot = { ...this.schedule.entries[this.selectedEntry!].slots[this.selectedSlot!] };
-      const target = this.schedule.entries[this.selectedEntry!].slots.find((e) =>
-        e.actions.length ? e.actions[0].target?.entity_id : undefined
-      );
-      let action = { ...res };
-      if (target && action.target) action = { ...action, target: target.actions[0].target };
-      this._updateSlot({ actions: [action] });
-    });
-  }
-
-  _actionItemOptionsClick(ev: CustomEvent) {
-    const option: 'delete' | 'change_type' = ev.detail.item.value;
-    switch (option) {
-      case 'change_type':
-        this._showActionDialog(ev);
-        break;
-      case 'delete':
-        this._updateSlot({ actions: [] });
-        break;
-    }
   }
 
   _stopTimeChanged(ev: CustomEvent) {
@@ -652,12 +427,6 @@ export class SchedulerMainPanel extends LitElement {
       }
       div.slot-placeholder {
         padding: 20px 0px 0px 0px;
-      }
-      scheduler-collapsible-section .header ha-icon {
-        margin-right: 6px;
-      }
-      scheduler-collapsible-section .header span {
-        flex: 1;
       }
       scheduler-list-item.warning,
       scheduler-list-item.warning ha-icon {
