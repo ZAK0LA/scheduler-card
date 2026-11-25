@@ -84,6 +84,51 @@ check('new schedule uses default_editor', () =>
     'interval'
   )
 );
+check('scheme default_editor keeps a timeslot with end time in scheme mode', () =>
+  assert.equal(
+    detectEditorMode(
+      entry([slot('00:00:00', '08:00:00'), slot('08:00:00', '09:00:00', [action]), slot('09:00:00', '00:00:00')]),
+      'scheme'
+    ),
+    'scheme'
+  )
+);
+check('scheme default_editor keeps a checkpoint in scheme mode', () =>
+  assert.equal(
+    detectEditorMode(
+      entry([slot('00:00:00', '08:00:00'), slot('08:00:00', undefined, [action]), slot('08:01:00', '00:00:00')]),
+      'scheme'
+    ),
+    'scheme'
+  )
+);
+check('interval default_editor opens a checkpoint in single mode', () =>
+  assert.equal(
+    detectEditorMode(
+      entry([slot('00:00:00', '08:00:00'), slot('08:00:00', undefined, [action]), slot('08:01:00', '00:00:00')]),
+      'interval'
+    ),
+    'single'
+  )
+);
+check('single default_editor opens a timeslot with end time in interval mode', () =>
+  assert.equal(
+    detectEditorMode(
+      entry([slot('00:00:00', '08:00:00'), slot('08:00:00', '09:00:00', [action]), slot('09:00:00', '00:00:00')]),
+      'single'
+    ),
+    'interval'
+  )
+);
+check('interval default_editor opens two timeslots in scheme mode', () =>
+  assert.equal(
+    detectEditorMode(
+      entry([slot('00:00:00', '08:00:00', [action]), slot('08:00:00', '00:00:00', [action])]),
+      'interval'
+    ),
+    'scheme'
+  )
+);
 check('new schedule without default_editor uses single mode', () =>
   assert.equal(
     detectEditorMode(entry([slot('00:00:00', '12:00:00'), slot('12:00:00', undefined), slot('12:01:00', '00:00:00')])),

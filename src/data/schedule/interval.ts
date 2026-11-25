@@ -12,16 +12,22 @@ const END_OF_DAY = 24 * 3600;
 // A stop time of 00:00 closes the timeslot at the end of the day.
 const stopTimestamp = (stop: string, hass: HomeAssistant) => computeTimestamp(stop, hass) || END_OF_DAY;
 
-/** Pick the editor for a schedule entry from its data, as the card stores no editor mode. */
+/**
+ * Pick the editor for a schedule entry, as the card stores no editor mode: the default editor when it can show the
+ * entry without changing it, otherwise the simplest editor that can (single, then interval, then scheme).
+ */
 export const detectEditorMode = (entry: ScheduleEntry, defaultMode?: EditorMode): EditorMode => {
   const actionSlots = entry.slots.filter((e) => e.actions.length);
-  if (actionSlots.length > 1) return EditorMode.Scheme;
-  if (actionSlots.length == 1) {
-    if (isDefined(actionSlots[0].stop)) return EditorMode.Interval;
-    return entry.slots.length > 3 ? EditorMode.Scheme : EditorMode.Single;
-  }
-  if (entry.slots.length > 3) return EditorMode.Scheme;
-  return defaultMode || EditorMode.Single;
+  const canShow = (mode: EditorMode) => {
+    if (mode == EditorMode.Scheme) return true;
+    if (actionSlots.length > 1) return false;
+    // single: one start time, and at most 3 timeslots as before
+    if (mode == EditorMode.Single) return entry.slots.length <= 3 && !actionSlots.some((e) => isDefined(e.stop));
+    // interval: one timeslot with an end time, or a new schedule without actions
+    return actionSlots.length ? isDefined(actionSlots[0].stop) : entry.slots.length <= 3;
+  };
+  if (defaultMode && canShow(defaultMode)) return defaultMode;
+  return [EditorMode.Single, EditorMode.Interval, EditorMode.Scheme].find((e) => canShow(e))!;
 };
 
 /** End time for a new interval: one hour after the start, but not past midnight. */
