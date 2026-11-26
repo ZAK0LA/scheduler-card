@@ -256,6 +256,9 @@
             "heading": "Tags",
             "description": "Use tags to divide schedules between multiple cards"
           },
+          "editor_tags": {
+            "heading": "Editor tags"
+          },
           "entities": {
             "button_label": "Configure included entities",
             "heading": "Included entities",
