@@ -1,0 +1,170 @@
+# Heating example from VISION.md: package for configuration.yaml
+#   homeassistant:
+#     packages:
+#       heating_vision: !include heating-package.yaml
+#
+# Replace climate.living_room / climate.bedroom with your own entities.
+# Requires the integration branch of ZAK0LA/scheduler-component
+# (day scopes, `active` attribute) and the Workday integration
+# (binary_sensor.workday_sensor).
+
+template:
+  - binary_sensor:
+      # "Comfort period now" per room, derived from the `active` attribute (#563).
+      # The conditions of the schedules are taken into account by the component,
+      # nothing has to be copied into templates.
+      - name: Living room comfort
+        unique_id: heating_vision_living_room_comfort
+        icon: mdi:sofa
+        state: >
+          {{ states.switch
+             | selectattr('attributes.active', 'eq', true)
+             | selectattr('attributes.tags', 'contains', 'heating_living_room')
+             | list | count > 0 }}
+        attributes:
+          schedule: >
+            {{ states.switch
+               | selectattr('attributes.active', 'eq', true)
+               | selectattr('attributes.tags', 'contains', 'heating_living_room')
+               | map(attribute='name') | map('regex_replace', '^Scheduler ', '') | join(', ') }}
+
+      - name: Bedroom comfort
+        unique_id: heating_vision_bedroom_comfort
+        icon: mdi:bed
+        state: >
+          {{ states.switch
+             | selectattr('attributes.active', 'eq', true)
+             | selectattr('attributes.tags', 'contains', 'heating_bedroom')
+             | list | count > 0 }}
+        attributes:
+          schedule: >
+            {{ states.switch
+               | selectattr('attributes.active', 'eq', true)
+               | selectattr('attributes.tags', 'contains', 'heating_bedroom')
+               | map(attribute='name') | map('regex_replace', '^Scheduler ', '') | join(', ') }}
+
+automation:
+  # Comfort periods set the comfort temperature (default action of the card).
+  # Outside of them the room goes back to eco. This logic belongs to the
+  # dashboard designer; household members only edit the periods.
+  - id: heating_vision_eco
+    alias: Heating – eco outside comfort periods
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.living_room_comfort
+        to: "off"
+        variables:
+          climate: climate.living_room
+          eco: 18
+      - trigger: state
+        entity_id: binary_sensor.bedroom_comfort
+        to: "off"
+        variables:
+          climate: climate.bedroom
+          eco: 17
+    actions:
+      - action: climate.set_temperature
+        target:
+          entity_id: "{{ climate }}"
+        data:
+          temperature: "{{ eco }}"
+
+script:
+  # Run once to create the sample schedules shown on the screenshots.
+  heating_vision_create_schedules:
+    alias: Heating – create sample schedules
+    sequence:
+      # Living room ---------------------------------------------------------
+      - action: scheduler.add
+        data:
+          name: Morning
+          tags: [heating_living_room]
+          weekdays: [workday]
+          repeat_type: repeat
+          timeslots:
+            - start: "06:00:00"
+              stop: "08:00:00"
+              actions:
+                - service: climate.set_temperature
+                  entity_id: climate.living_room
+                  service_data: { temperature: 21 }
+      - action: scheduler.add
+        data:
+          name: Evening
+          tags: [heating_living_room]
+          weekdays: [regular_workday]
+          repeat_type: repeat
+          timeslots:
+            - start: "16:30:00"
+              stop: "22:00:00"
+              actions:
+                - service: climate.set_temperature
+                  entity_id: climate.living_room
+                  service_data: { temperature: 21 }
+      - action: scheduler.add
+        data:
+          name: Evening before a day off
+          tags: [heating_living_room]
+          weekdays: [last_workday]
+          repeat_type: repeat
+          timeslots:
+            - start: "16:30:00"
+              stop: "23:30:00"
+              actions:
+                - service: climate.set_temperature
+                  entity_id: climate.living_room
+                  service_data: { temperature: 21 }
+      - action: scheduler.add
+        data:
+          name: Day off
+          tags: [heating_living_room]
+          weekdays: [regular_day_off]
+          repeat_type: repeat
+          timeslots:
+            - start: "08:00:00"
+              stop: "23:30:00"
+              actions:
+                - service: climate.set_temperature
+                  entity_id: climate.living_room
+                  service_data: { temperature: 21 }
+      - action: scheduler.add
+        data:
+          name: Last day off
+          tags: [heating_living_room]
+          weekdays: [last_day_off]
+          repeat_type: repeat
+          timeslots:
+            - start: "08:00:00"
+              stop: "22:00:00"
+              actions:
+                - service: climate.set_temperature
+                  entity_id: climate.living_room
+                  service_data: { temperature: 21 }
+      # Bedroom -------------------------------------------------------------
+      - action: scheduler.add
+        data:
+          name: Wake-up
+          tags: [heating_bedroom]
+          weekdays: [workday]
+          repeat_type: repeat
+          timeslots:
+            - start: "05:45:00"
+              stop: "07:00:00"
+              actions:
+                - service: climate.set_temperature
+                  entity_id: climate.bedroom
+                  service_data: { temperature: 20 }
+      - action: scheduler.add
+        data:
+          name: Bedtime
+          tags: [heating_bedroom]
+          weekdays: [daily]
+          repeat_type: repeat
+          timeslots:
+            - start: "21:30:00"
+              stop: "23:00:00"
+              actions:
+                - service: climate.set_temperature
+                  entity_id: climate.bedroom
+                  service_data: { temperature: 20 }

@@ -1,0 +1,149 @@
+# Heating example from VISION.md: dashboard (raw configuration editor of a new dashboard).
+# Requires the integration branch of ZAK0LA/scheduler-card and heating-package.yaml.
+#
+# View "Heating"             -> everyday scheduling (household members)
+# View "Schedule management" -> schedule management (dashboard designer)
+
+title: Heating
+views:
+  # ---------------------------------------------------------------------------
+  # Screenshot 1: complete heating dashboard
+  # Screenshot 2: simplified schedule editor (click a schedule or "Add")
+  # ---------------------------------------------------------------------------
+  - title: Heating
+    path: heating
+    icon: mdi:radiator
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Living room
+            icon: mdi:sofa
+            badges:
+              - type: entity
+                entity: binary_sensor.living_room_comfort
+                show_state: false
+                color: orange
+          - type: thermostat
+            entity: climate.living_room
+            grid_options:
+              columns: full
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              {% if is_state('binary_sensor.living_room_comfort', 'on') %}
+              **Comfort** · {{ state_attr('binary_sensor.living_room_comfort', 'schedule') }}
+              {% else %}
+              **Eco** · no comfort period right now
+              {% endif %}
+          -
+            type: custom:scheduler-card
+            title: Comfort periods · 21 °C
+            grid_options:
+              columns: full
+            include:
+              - climate.living_room
+            discover_existing: false
+            tags: heating_living_room          # new schedules get this tag
+            default_editor: interval           # #1219
+            default_actions:                   # #1225
+              - service: climate.set_temperature
+                entity_id: climate.living_room
+                service_data:
+                  temperature: 21
+            show_actions: false                # #1159 / #1225
+            show_options_tab: false            # #1159
+            show_editor_mode_button: false     # #1159
+            show_sun_mode_button: false        # #1228
+            time_step: 15
+            sort_by: title
+            display_options:
+              primary_info: "{name}"
+              secondary_info: "{days} · {time}"
+              icon: schedule                   # #1222
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Bedroom
+            icon: mdi:bed
+            badges:
+              - type: entity
+                entity: binary_sensor.bedroom_comfort
+                show_state: false
+                color: orange
+          - type: thermostat
+            entity: climate.bedroom
+            grid_options:
+              columns: full
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              {% if is_state('binary_sensor.bedroom_comfort', 'on') %}
+              **Comfort** · {{ state_attr('binary_sensor.bedroom_comfort', 'schedule') }}
+              {% else %}
+              **Eco** · no comfort period right now
+              {% endif %}
+          - type: custom:scheduler-card
+            title: Comfort periods · 20 °C
+            grid_options:
+              columns: full
+            include:
+              - climate.bedroom
+            discover_existing: false
+            tags: heating_bedroom
+            default_editor: interval
+            default_actions:
+              - service: climate.set_temperature
+                entity_id: climate.bedroom
+                service_data:
+                  temperature: 20
+            show_actions: false
+            show_options_tab: false
+            show_editor_mode_button: false
+            show_sun_mode_button: false
+            time_step: 15
+            sort_by: title
+            display_options:
+              primary_info: "{name}"
+              secondary_info: "{days} · {time}"
+              icon: schedule
+
+  # ---------------------------------------------------------------------------
+  # Screenshot 3: interval editing mode (open "Evening")
+  # Same schedules, full editor: actions, options, editor mode, sun times.
+  # ---------------------------------------------------------------------------
+  - title: Schedule management
+    path: heating-admin
+    icon: mdi:cog
+    type: sections
+    max_columns: 1
+    sections:
+      - type: grid
+        cards:
+          - type: custom:scheduler-card
+            title: Heating schedules
+            grid_options:
+              columns: full
+            include:
+              - climate.living_room
+              - climate.bedroom
+            discover_existing: false
+            tags:
+              - heating_living_room
+              - heating_bedroom
+            editor_tags:                       # #1160
+              - heating_living_room
+              - heating_bedroom
+            default_editor: interval           # #1219
+            sort_by: title
+            display_options:
+              primary_info: "{name} · {entity}"
+              secondary_info:
+                - "{days} · {time}"
+                - tags
+              icon: schedule                   # #1222
