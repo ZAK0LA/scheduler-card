@@ -144,6 +144,16 @@
           "missing_target_entity": "Jednej lub więcej akcji brakuje docelowej encji",
           "missing_service_parameter": "Jednej lub więcej akcji brakuje wymaganego parametru",
           "missing_action": "Harmonogram nie ma żadnych akcji"
+        },
+        "default_action_errors": {
+          "no_default_actions": "Nie ustawiono domyślnych akcji (default_actions).",
+          "multiple_actions": "Domyślne akcje mogą się różnić tylko entity_id: jeden serwis z tym samym service_data dla wszystkich encji.",
+          "missing_entity": "Domyślna akcja {service} nie ma entity_id.",
+          "action_entity_mismatch": "entity_id {entity} nie pasuje do domyślnej akcji {service}. Dla skryptu entity_id musi być samym skryptem.",
+          "entity_not_included": "Encja domyślnej akcji {entity} nie jest uwzględniona w karcie (include / exclude).",
+          "entity_unavailable": "Encja domyślnej akcji {entity} jest niedostępna.",
+          "action_not_found": "Domyślna akcja {service} nie jest dostępna[ dla {entity}].",
+          "action_incomplete": "Domyślnej akcji {service} brakuje wymaganego ustawienia (service_data)."
         }
       },
       "options": {
@@ -216,6 +226,10 @@
           },
           "lock_actions": {
             "heading": "Zablokuj akcje"
+          },
+          "show_actions": {
+            "heading": "Pokaż akcje",
+            "missing_default": "Przy ukrytych akcjach nie można zapisać nowych harmonogramów:"
           },
           "sort_by": {
             "heading": "Opcje sortowania",

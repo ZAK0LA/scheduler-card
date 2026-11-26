@@ -1,7 +1,7 @@
 import { mdiArrowLeft, mdiClose, mdiCogOutline } from '@mdi/js';
 import { LitElement, PropertyValues, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
-import { CardConfig, EditorMode, Schedule, ScheduleEntry } from '../types';
+import { Action, CardConfig, EditorMode, Schedule, ScheduleEntry } from '../types';
 import { EditorDialogStyles } from '../card.styles';
 import { localize } from '../localize/localize';
 import { HomeAssistant } from '../lib/types';
@@ -18,6 +18,13 @@ import { parseTimeBar } from '../data/time/parse_time_bar';
 import { hassLocalize } from '../localize/hassLocalize';
 import { convertSchemeToSingle } from '../data/schedule/convert_scheme_to_single';
 import { isDefined } from '../lib/is_defined';
+import {
+  DefaultActionFailure,
+  applyDefaultAction,
+  defaultActionErrorMessage,
+  defaultActionFitsSchedule,
+  resolveDefaultAction,
+} from '../data/actions/default_action';
 
 import './scheduler-main-panel';
 import './scheduler-options-panel';
@@ -44,6 +51,10 @@ export class DialogSchedulerEditor extends LitElement {
 
   @state() _panel: 'main' | 'options' = 'main';
 
+  // action from 'default_actions', or the reason why there is none
+  @state() private _defaultAction?: Action;
+  @state() private _defaultActionError?: DefaultActionFailure;
+
   @state() _viewMode: EditorMode = EditorMode.Single;
   set viewMode(mode: EditorMode) {
     this._viewMode = mode;
@@ -64,6 +75,13 @@ export class DialogSchedulerEditor extends LitElement {
     this.schedule = params.schedule;
     this._panel = 'main';
     this.large = false;
+
+    const defaultAction = resolveDefaultAction(this.hass, this._params!.cardConfig);
+    this._defaultAction = defaultAction.action;
+    this._defaultActionError = defaultAction.error ? defaultAction : undefined;
+    const hasActions = this.schedule.entries.some((e) => e.slots.some((s) => s.actions.length));
+    if (!this._params!.editItem && this._defaultAction && !hasActions)
+      this.schedule = applyDefaultAction(this.schedule, this._defaultAction);
 
     const isTimeSchemeType =
       this.schedule.entries[this.selectedEntry!].slots.filter((e) => e.actions.length && isDefined(e.stop)).length >
@@ -146,6 +164,8 @@ export class DialogSchedulerEditor extends LitElement {
                     .schedule=${this.schedule}
                     .large=${this.large}
                     .isNew=${!this._params.editItem}
+                    .defaultAction=${this._defaultActionForSchedule()}
+                    .defaultActionError=${this._defaultActionError}
                     @change=${this._updateSchedule}
                     @setViewMode=${this._setViewMode}
                     .viewMode=${this._viewMode}
@@ -197,15 +217,36 @@ export class DialogSchedulerEditor extends LitElement {
     }
   }
 
+  // The default action is only offered for new schedules, or for schedules that have no actions for other entities.
+  private _defaultActionForSchedule() {
+    if (!this._defaultAction) return undefined;
+    if (!this._params?.editItem || defaultActionFitsSchedule(this.schedule, this._defaultAction))
+      return this._defaultAction;
+    return undefined;
+  }
+
+  // Entries of a new, unchanged schedule, including the default action.
+  private _initialEntries(schedule: Schedule) {
+    if (this._params?.editItem || !this._defaultAction) return [...schedule.entries];
+    return applyDefaultAction(schedule, this._defaultAction).entries;
+  }
+
   private async _handleSaveClick(ev: Event) {
-    const error = validateSchedule(this.schedule, this.hass, this._params!.cardConfig.customize);
-    if (error) {
+    // with hidden actions, a new schedule can only be created with a valid default action
+    const missingDefault =
+      !this._params!.editItem && this._params!.cardConfig.show_actions === false && !this._defaultAction;
+    const error = missingDefault
+      ? null
+      : validateSchedule(this.schedule, this.hass, this._params!.cardConfig.customize);
+    if (missingDefault || error) {
       await new Promise<boolean>((resolve) => {
         const params: GenericDialogParams = {
           cancel: () => resolve(false),
           confirm: () => resolve(true),
           title: hassLocalize('state_badge.default.error', this.hass),
-          description: localize(`ui.panel.editor.validation_errors.${error}`, this.hass),
+          description: missingDefault
+            ? defaultActionErrorMessage(this._defaultActionError!, this.hass)
+            : localize(`ui.panel.editor.validation_errors.${error}`, this.hass),
           primaryButtonLabel: hassLocalize('ui.common.ok', this.hass),
         };
 
@@ -293,9 +334,9 @@ export class DialogSchedulerEditor extends LitElement {
 
     if (viewMode == EditorMode.Scheme) {
       this.viewMode = viewMode;
-      const isDefaultSchedule = deepCompare([...this.schedule.entries], [...defaultSingleTimerConfig.entries]);
+      const isDefaultSchedule = deepCompare([...this.schedule.entries], this._initialEntries(defaultSingleTimerConfig));
       if (isDefaultSchedule) {
-        this.schedule = { ...this.schedule, entries: [...defaultTimeSchemeConfig.entries] };
+        this.schedule = { ...this.schedule, entries: this._initialEntries(defaultTimeSchemeConfig) };
       } else {
         // Convert any checkpoint slots (stop === undefined, used by single-timer mode) to
         // duration slots so they display correctly in the scheme editor, which no longer
@@ -319,9 +360,9 @@ export class DialogSchedulerEditor extends LitElement {
       }
       return;
     } else if (viewMode == EditorMode.Single && !multipleActionsDefined) {
-      const isDefaultSchedule = deepCompare([...this.schedule.entries], [...defaultTimeSchemeConfig.entries]);
+      const isDefaultSchedule = deepCompare([...this.schedule.entries], this._initialEntries(defaultTimeSchemeConfig));
       if (isDefaultSchedule) {
-        this.schedule = { ...this.schedule, entries: [...defaultSingleTimerConfig.entries] };
+        this.schedule = { ...this.schedule, entries: this._initialEntries(defaultSingleTimerConfig) };
       } else {
         const schedule = {
           ...this.schedule,

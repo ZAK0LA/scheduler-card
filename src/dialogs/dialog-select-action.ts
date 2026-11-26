@@ -9,7 +9,7 @@ import { localize } from '../localize/localize';
 import { HomeAssistant } from '../lib/types';
 import { Action, CardConfig } from '../types';
 import { hassLocalize } from '../localize/hassLocalize';
-import { actionConfig } from '../data/actions/action_config';
+import { actionSupportsEntity } from '../data/actions/action_supports_entity';
 import { isDefined } from '../lib/is_defined';
 import '../components/scheduler-list-item';
 
@@ -225,23 +225,9 @@ export class DialogSelectAction extends LitElement {
     let result = this._params!.domainFilter!.map((e) => computeActionsForDomain(this.hass, e, cardConfig)).flat();
     if (this._params!.entityFilter?.length) {
       result = result.filter((item) =>
-        this._params!.entityFilter?.every((entity) => {
-          const config = actionConfig(item.action, this._params!.cardConfig.customize, this.hass);
-          const stateObj = this.hass.states[entity];
-          if (config.supported_features && !((stateObj.attributes.supported_features || 0) & config.supported_features))
-            return false;
-          else if (
-            Object.keys(item.action.service_data).includes('entity_id') &&
-            item.action.service_data.entity_id != entity
-          )
-            return false;
-          else if (
-            Object.keys(item.action.target || {}).includes('entity_id') &&
-            (item.action.target || {}).entity_id != entity
-          )
-            return false;
-          else return true;
-        })
+        this._params!.entityFilter?.every((entity) =>
+          actionSupportsEntity(item.action, entity, this.hass, this._params!.cardConfig.customize)
+        )
       );
     }
     if (this._filter) {

@@ -144,6 +144,16 @@
           "missing_target_entity": "One or more actions are missing a target entity",
           "missing_service_parameter": "One or more actions are missing a required setting",
           "missing_action": "Schedule has no actions"
+        },
+        "default_action_errors": {
+          "no_default_actions": "No default actions are set (default_actions).",
+          "multiple_actions": "The default actions may only differ in entity_id: one service with the same service_data for all entities.",
+          "missing_entity": "The default action {service} has no entity_id.",
+          "action_entity_mismatch": "entity_id {entity} doesn't belong to the default action {service}. For a script, entity_id must be the script itself.",
+          "entity_not_included": "The entity of the default action {entity} is not included in the card (include / exclude).",
+          "entity_unavailable": "The entity of the default action {entity} is unavailable.",
+          "action_not_found": "The default action {service} is not available[ for {entity}].",
+          "action_incomplete": "The default action {service} is missing a required setting (service_data)."
         }
       },
       "options": {
@@ -216,6 +226,10 @@
           },
           "lock_actions": {
             "heading": "Lock actions"
+          },
+          "show_actions": {
+            "heading": "Show actions",
+            "missing_default": "New schedules can't be saved while actions are hidden:"
           },
           "sort_by": {
             "heading": "Sorting options",

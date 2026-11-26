@@ -41,10 +41,32 @@ export const validateConfig = (config: any) => {
     errors.push(`'show_add_button' must be a boolean`);
   }
 
-  for (const key of ['show_delete_button', 'show_options_tab', 'show_editor_mode_button', 'lock_actions']) {
+  for (const key of [
+    'show_delete_button',
+    'show_options_tab',
+    'show_editor_mode_button',
+    'lock_actions',
+    'show_actions',
+  ]) {
     if (hasKey(config, key) && !isTypeBoolean(config[key])) {
       errors.push(`'${key}' must be a boolean`);
     }
+  }
+
+  if (hasKey(config, 'default_actions')) {
+    // the format of the actions of a timeslot in scheduler.add, a single entry is accepted without a list
+    const isEntityId = (obj: any) => isTypeString(obj) && /^\w+\.\w+$/.test(obj.trim());
+    const isEntry = (obj: any) =>
+      isTypeObject(obj) &&
+      obj !== null &&
+      isEntityId(obj.service) &&
+      (!hasKey(obj, 'entity_id') || isEntityId(obj.entity_id)) &&
+      (!hasKey(obj, 'service_data') || (isTypeObject(obj.service_data) && obj.service_data !== null));
+    const entries = [config.default_actions].flat();
+    if (!entries.length || !entries.every(isEntry))
+      errors.push(
+        `'default_actions' must be a list of actions with 'service' and optional 'entity_id' and 'service_data'`
+      );
   }
 
   if (hasKey(config, 'show_toggle_switches') && !isTypeBoolean(config.show_toggle_switches)) {

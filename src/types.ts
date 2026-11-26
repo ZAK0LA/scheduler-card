@@ -22,6 +22,15 @@ export interface CardConfig {
   show_options_tab?: boolean;
   show_editor_mode_button?: boolean;
   lock_actions?: boolean;
+  show_actions?: boolean;
+  default_actions?: DefaultActionConfig[] | DefaultActionConfig;
+}
+
+// An action in the format of the actions of a timeslot in scheduler.add: one entry per entity.
+export interface DefaultActionConfig {
+  service: string;
+  entity_id?: string;
+  service_data?: Record<string, any>;
 }
 
 export enum EditorMode {

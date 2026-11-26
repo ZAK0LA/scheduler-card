@@ -17,6 +17,7 @@ import {
 } from './const';
 import { loadConfigFromEntityRegistry } from './data/load_config_from_entity_registry';
 import { hassLocalize } from './localize/hassLocalize';
+import { defaultActionErrorMessage, resolveDefaultAction } from './data/actions/default_action';
 
 import './dialogs/dialog-select-entities';
 import './components/scheduler-entity-picker';
@@ -153,7 +154,17 @@ export class SchedulerCardEditor extends LitElement {
               >${localize('ui.panel.card_editor.fields.lock_actions.heading', this.hass)}</ha-switch
             >
           </div>
+          <div class="column">
+            <ha-switch
+              ?checked=${this._config.show_actions !== false}
+              @change=${(ev: Event) => {
+                this._updateConfig({ show_actions: (ev.target as HTMLInputElement).checked });
+              }}
+              >${localize('ui.panel.card_editor.fields.show_actions.heading', this.hass)}</ha-switch
+            >
+          </div>
         </div>
+        ${this._renderDefaultActionWarning()}
 
         <scheduler-settings-row>
           <span slot="heading">${localize('ui.panel.card_editor.fields.time_step.heading', this.hass)}</span>
@@ -475,6 +486,19 @@ export class SchedulerCardEditor extends LitElement {
     fireEvent(this, 'config-changed', { config: this._config });
   }
 
+  // New schedules can't be saved with hidden actions unless there is a valid default action.
+  private _renderDefaultActionWarning() {
+    if (this._config.show_actions !== false || !this.hass) return '';
+    const result = resolveDefaultAction(this.hass, this._config);
+    if (!result.error) return '';
+    return html`
+      <div class="warning">
+        ${localize('ui.panel.card_editor.fields.show_actions.missing_default', this.hass)}
+        ${defaultActionErrorMessage(result, this.hass)}
+      </div>
+    `;
+  }
+
   static styles = css`
     div.entities-list {
       max-height: 500px;
@@ -518,6 +542,10 @@ export class SchedulerCardEditor extends LitElement {
     div.two-columns .column > * {
       display: flex;
       flex-direction: column;
+    }
+    div.warning {
+      margin: -5px 0px 15px 0px;
+      color: var(--error-color);
     }
     div.two-columns.switches {
       flex-wrap: wrap;

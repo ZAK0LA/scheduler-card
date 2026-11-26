@@ -9,6 +9,7 @@ import {
 import { CSSResultGroup, LitElement, PropertyValues, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { Action, CardConfig, EditorMode, Schedule, ScheduleEntry, TWeekday, Time, Timeslot } from '../types';
+import { DefaultActionFailure, defaultActionErrorMessage } from '../data/actions/default_action';
 import { actionConfig } from '../data/actions/action_config';
 import { formatWeekdayDisplay } from '../data/days';
 import { defaultSelectorValue } from '../data/selectors/default_selector_value';
@@ -53,6 +54,8 @@ export class SchedulerMainPanel extends LitElement {
   @property({ attribute: false }) public viewMode!: EditorMode;
   @property({ attribute: false }) public selectedSlot: number | null = null;
   @property({ type: Boolean }) public isNew = false;
+  @property({ attribute: false }) public defaultAction?: Action;
+  @property({ attribute: false }) public defaultActionError?: DefaultActionFailure;
   @property({ type: Boolean }) large = false;
 
   @state() schedule!: Schedule;
@@ -65,9 +68,15 @@ export class SchedulerMainPanel extends LitElement {
     return true;
   }
 
-  // Actions of existing schedules are read-only when lock_actions is set; new schedules still need an action.
+  // With show_actions: false the action section is hidden, which implies that the actions are locked.
+  get actionsHidden() {
+    return this.config.show_actions === false;
+  }
+
+  // Actions are read-only when lock_actions is set. A new schedule is only restricted if it got a default action.
   get actionsLocked() {
-    return this.config.lock_actions === true && !this.isNew;
+    if (this.actionsHidden) return true;
+    return this.config.lock_actions === true && (!this.isNew || isDefined(this.defaultAction));
   }
 
   render() {
@@ -232,7 +241,13 @@ export class SchedulerMainPanel extends LitElement {
             </div>`
           : ''
       }
-      ${localize('ui.panel.editor.action', this.hass)}: ${this._renderActionConfig()}
+      ${
+        this.actionsHidden
+          ? this.isNew && !this.defaultAction && this.defaultActionError
+            ? html`<div class="warning">${defaultActionErrorMessage(this.defaultActionError, this.hass)}</div>`
+            : ''
+          : html`${localize('ui.panel.editor.action', this.hass)}: ${this._renderActionConfig()}`
+      }
     `;
   }
 
@@ -568,7 +583,16 @@ export class SchedulerMainPanel extends LitElement {
 
   _addTimeslot(ev: Event) {
     if (this.selectedEntry === null || this.selectedSlot === null) return;
+    const sourceActions = this.schedule.entries[this.selectedEntry].slots[this.selectedSlot].actions;
     this.schedule = insertTimeslot(this.schedule, this.selectedEntry, this.selectedSlot, this.hass);
+    // with locked actions the new timeslot can't get an action, so it takes over the action of the split timeslot
+    if (this.actionsLocked) {
+      const actions = sourceActions.length ? sourceActions : this.defaultAction ? [this.defaultAction] : [];
+      this._updateSlot(
+        { actions: actions.map((e) => ({ ...e, service_data: { ...e.service_data } })) },
+        this.selectedSlot + 1
+      );
+    }
     (ev.target as HTMLElement).blur();
   }
 
@@ -637,6 +661,10 @@ export class SchedulerMainPanel extends LitElement {
       }
       scheduler-list-item.warning,
       scheduler-list-item.warning ha-icon {
+        color: var(--error-color);
+      }
+      div.warning {
+        padding: 16px 0px 0px 0px;
         color: var(--error-color);
       }
     `;
