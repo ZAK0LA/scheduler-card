@@ -251,6 +251,13 @@
           "show_sun_mode_button": {
             "heading": "Show sun mode button"
           },
+          "actions": {
+            "heading": "Actions"
+          },
+          "default_actions": {
+            "heading": "Default action for new schedules",
+            "add": "Add default action"
+          },
           "sort_by": {
             "heading": "Sorting options",
             "description": "Order in which the schedules appear in the card",

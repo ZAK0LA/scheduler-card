@@ -17,6 +17,7 @@ const {
   applyDefaultAction,
   defaultActionFitsSchedule,
   defaultActionErrorMessage,
+  defaultActionsFromAction,
 } = require('../src/data/actions/default_action.ts');
 const { validateConfig } = require('../src/data/validate_config.ts');
 const { localize } = require('../src/localize/localize.ts');
@@ -347,8 +348,54 @@ for (const [config, message] of [
   );
 }
 
+// the card editor writes an action as 'default_actions': one entry per entity, in the format of scheduler.add
+assert.deepEqual(
+  defaultActionsFromAction({
+    service: 'light.turn_on',
+    service_data: { brightness: 128 },
+    target: { entity_id: ['light.kitchen', 'light.hall'] },
+  }),
+  lights
+);
+// a single entity is a list with one entry, and empty service_data is left out
+assert.deepEqual(
+  defaultActionsFromAction({ service: 'light.turn_off', service_data: {}, target: { entity_id: 'light.kitchen' } }),
+  [{ service: 'light.turn_off', entity_id: 'light.kitchen' }]
+);
+// a script has no entity_id
+assert.deepEqual(defaultActionsFromAction({ service: 'script.wake_up', service_data: {} }), [
+  { service: 'script.wake_up' },
+]);
+// without an entity yet, the entry has no entity_id, which the validation reports
+const noEntity = defaultActionsFromAction({ service: 'light.turn_on', service_data: {}, target: {} });
+assert.deepEqual(noEntity, [{ service: 'light.turn_on' }]);
+assert.equal(error({ ...climate, default_actions: noEntity }), 'missing_entity');
+// every entry has its own copy of the data, so that the YAML of the card has no anchors
+const written = defaultActionsFromAction({
+  service: 'light.turn_on',
+  service_data: { brightness: 128 },
+  target: { entity_id: ['light.kitchen', 'light.hall'] },
+});
+assert.notEqual(written[0].service_data, written[1].service_data);
+// what the editor writes reads back as the same action
+for (const config of [
+  climate,
+  { ...climate, default_actions: lights },
+  { include: ['script.wake_up'], default_actions: [{ service: 'script.wake_up' }] },
+]) {
+  const action = resolveDefaultAction(hass, config).action;
+  assert.ok(action, JSON.stringify(config));
+  assert.deepEqual(
+    resolveDefaultAction(hass, { ...config, default_actions: defaultActionsFromAction(action) }).action,
+    action
+  );
+}
+
 // translations: resolve in every language, defined in en and pl
 const keys = [
+  'ui.panel.card_editor.fields.actions.heading',
+  'ui.panel.card_editor.fields.default_actions.heading',
+  'ui.panel.card_editor.fields.default_actions.add',
   'ui.panel.card_editor.fields.show_actions.heading',
   'ui.panel.card_editor.fields.show_actions.missing_default',
   ...[

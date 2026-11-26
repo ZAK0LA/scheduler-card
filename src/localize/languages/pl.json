@@ -251,6 +251,13 @@
           "show_sun_mode_button": {
             "heading": "Pokaż przycisk trybu słońca"
           },
+          "actions": {
+            "heading": "Akcje"
+          },
+          "default_actions": {
+            "heading": "Domyślna akcja dla nowych harmonogramów",
+            "add": "Dodaj domyślną akcję"
+          },
           "sort_by": {
             "heading": "Opcje sortowania",
             "description": "Kolejność, w jakiej harmonogramy pojawiają się na karcie",

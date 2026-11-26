@@ -19,6 +19,8 @@ export type DialogSelectActionParams = {
   domainFilter?: string[];
   entityFilter?: string[];
   cardConfig: CardConfig;
+  // offers 'show all', which ignores include / exclude (default: true)
+  allowShowAll?: boolean;
 };
 
 @customElement('dialog-select-action')
@@ -84,7 +86,7 @@ export class DialogSelectAction extends LitElement {
             }
             <div slot="title">${localize('ui.dialog.action_picker.title', this.hass)}</div>
             ${
-              !this.lockDomain && isDefined(this._params.cardConfig.include)
+              !this.lockDomain && this._params.allowShowAll !== false && isDefined(this._params.cardConfig.include)
                 ? html` <ha-dropdown
                     placement="bottom-end"
                     slot="actionItems"

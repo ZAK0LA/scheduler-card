@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators';
 import { DialogSelectEntitiesParams } from './dialogs/dialog-select-entities';
 import { HomeAssistant } from './lib/types';
 import { localize } from './localize/localize';
-import { CardConfig, EditorMode } from './types';
+import { Action, CardConfig, DefaultActionConfig, EditorMode } from './types';
 import { fireEvent } from './lib/fire_event';
 import { NumberSelector, SelectSelector } from './lib/selector';
 import { fetchTags } from './data/store/fetch_tags';
@@ -17,12 +17,20 @@ import {
 } from './const';
 import { loadConfigFromEntityRegistry } from './data/load_config_from_entity_registry';
 import { hassLocalize } from './localize/hassLocalize';
-import { defaultActionErrorMessage, resolveDefaultAction } from './data/actions/default_action';
+import {
+  defaultActionErrorMessage,
+  defaultActionMissingEntity,
+  defaultActionsFromAction,
+  resolveDefaultAction,
+} from './data/actions/default_action';
+import { deepCompare } from './lib/deep_compare';
+import { computeActionDialogFilter } from './components/scheduler-action-editor';
 
 import './dialogs/dialog-select-entities';
 import './components/scheduler-entity-picker';
 import './components/scheduler-collapsible-section';
 import './components/scheduler-combo-selector';
+import './components/scheduler-action-editor';
 
 @customElement('scheduler-card-editor')
 export class SchedulerCardEditor extends LitElement {
@@ -42,6 +50,11 @@ export class SchedulerCardEditor extends LitElement {
   tagOptions: string[] = [];
 
   @state() customTagValue: string = '';
+
+  // the default action while it is edited, which may still be incomplete
+  @state() private _draftDefaultAction?: Action;
+  // 'default_actions' of the configuration when the draft was set, to notice changes made elsewhere, e.g. in YAML
+  private _draftBase?: DefaultActionConfig[];
 
   async firstUpdated() {
     this.title = typeof this._config.title == 'string' ? this._config.title : '';
@@ -147,24 +160,6 @@ export class SchedulerCardEditor extends LitElement {
           </div>
           <div class="column">
             <ha-switch
-              ?checked=${this._config.lock_actions === true}
-              @change=${(ev: Event) => {
-                this._updateConfig({ lock_actions: (ev.target as HTMLInputElement).checked });
-              }}
-              >${localize('ui.panel.card_editor.fields.lock_actions.heading', this.hass)}</ha-switch
-            >
-          </div>
-          <div class="column">
-            <ha-switch
-              ?checked=${this._config.show_actions !== false}
-              @change=${(ev: Event) => {
-                this._updateConfig({ show_actions: (ev.target as HTMLInputElement).checked });
-              }}
-              >${localize('ui.panel.card_editor.fields.show_actions.heading', this.hass)}</ha-switch
-            >
-          </div>
-          <div class="column">
-            <ha-switch
               ?checked=${this._config.show_sun_mode_button !== false}
               @change=${(ev: Event) => {
                 this._updateConfig({ show_sun_mode_button: (ev.target as HTMLInputElement).checked });
@@ -173,7 +168,8 @@ export class SchedulerCardEditor extends LitElement {
             >
           </div>
         </div>
-        ${this._renderDefaultActionWarning()}
+
+        ${this._renderActionsSection()}
 
         <scheduler-settings-row>
           <span slot="heading">${localize('ui.panel.card_editor.fields.time_step.heading', this.hass)}</span>
@@ -521,17 +517,120 @@ export class SchedulerCardEditor extends LitElement {
     fireEvent(this, 'config-changed', { config: this._config });
   }
 
-  // New schedules can't be saved with hidden actions unless there is a valid default action.
-  private _renderDefaultActionWarning() {
-    if (this._config.show_actions !== false || !this.hass) return '';
-    const result = resolveDefaultAction(this.hass, this._config);
-    if (!result.error) return '';
+  // The default action for new schedules, and the options that use it.
+  private _renderActionsSection() {
+    if (!this.hass) return '';
+    const entries = [this._config.default_actions || []].flat();
+
+    // the action being edited, as long as the configuration wasn't changed elsewhere
+    const draft =
+      this._draftDefaultAction && deepCompare(this._draftBase, entries) ? this._draftDefaultAction : undefined;
+    const shownEntries = draft ? defaultActionsFromAction(draft) : entries;
+    const result = resolveDefaultAction(this.hass, { ...this._config, default_actions: shownEntries });
+    const action = draft || result.action;
+
+    // like in the schedule editor, a new type keeps the domain and the entity of the action
+    const filter = computeActionDialogFilter(action ? [action] : []);
+
+    // new schedules can't be saved with hidden actions unless there is a valid default action
+    const failure = result.error && (shownEntries.length || this._config.show_actions === false) ? result : undefined;
+
     return html`
-      <div class="warning">
-        ${localize('ui.panel.card_editor.fields.show_actions.missing_default', this.hass)}
-        ${defaultActionErrorMessage(result, this.hass)}
+      <div class="section-heading">${localize('ui.panel.card_editor.fields.actions.heading', this.hass)}</div>
+      <span>${localize('ui.panel.card_editor.fields.default_actions.heading', this.hass)}</span>
+      ${
+        action || !entries.length
+          ? html`
+              <scheduler-action-editor
+                .hass=${this.hass}
+                .config=${this._config}
+                .action=${action}
+                .domainFilter=${filter.domainFilter}
+                .entityFilter=${filter.entityFilter}
+                .keepTarget=${action?.target}
+                .allowShowAll=${false}
+                .addLabel=${localize('ui.panel.card_editor.fields.default_actions.add', this.hass)}
+                @action-changed=${(ev: CustomEvent) => this._setDefaultAction(ev.detail.action)}
+                @entity-changed=${(ev: CustomEvent) =>
+                  this._setDefaultAction({ ...action!, target: { entity_id: ev.detail.entity_id } })}
+              >
+              </scheduler-action-editor>
+            `
+          : html`
+              <div class="buttons">
+                <scheduler-action-editor
+                  .hass=${this.hass}
+                  .config=${this._config}
+                  .allowShowAll=${false}
+                  .addLabel=${hassLocalize('ui.panel.lovelace.editor.card.conditional.change_type', this.hass)}
+                  addIcon="mdi:pencil"
+                  @action-changed=${(ev: CustomEvent) => this._setDefaultAction(ev.detail.action)}
+                >
+                </scheduler-action-editor>
+                <ha-button appearance="plain" variant="danger" @click=${() => this._setDefaultAction(undefined)}>
+                  <ha-icon slot="start" icon="mdi:delete"></ha-icon>
+                  ${hassLocalize('ui.common.delete', this.hass)}
+                </ha-button>
+              </div>
+            `
+      }
+      ${
+        failure
+          ? html`
+              <div class="warning">
+                ${
+                  this._config.show_actions === false
+                    ? localize('ui.panel.card_editor.fields.show_actions.missing_default', this.hass)
+                    : ''
+                }
+                ${defaultActionErrorMessage(failure, this.hass)}
+              </div>
+            `
+          : ''
+      }
+
+      <div class="two-columns switches" style="margin: 10px 0px 15px 0px">
+        <div class="column">
+          <ha-switch
+            ?checked=${this._config.lock_actions === true}
+            @change=${(ev: Event) => {
+              this._updateConfig({ lock_actions: (ev.target as HTMLInputElement).checked });
+            }}
+            >${localize('ui.panel.card_editor.fields.lock_actions.heading', this.hass)}</ha-switch
+          >
+        </div>
+        <div class="column">
+          <ha-switch
+            ?checked=${this._config.show_actions !== false}
+            @change=${(ev: Event) => {
+              this._updateConfig({ show_actions: (ev.target as HTMLInputElement).checked });
+            }}
+            >${localize('ui.panel.card_editor.fields.show_actions.heading', this.hass)}</ha-switch
+          >
+        </div>
       </div>
     `;
+  }
+
+  // Writes the default action as 'default_actions', or removes it.
+  // An action without its entity is only kept in the editor until the entity is chosen. The entity picker may choose
+  // it right away, and the dashboard editor can lose the second of two changes in quick succession.
+  private _setDefaultAction(action: Action | undefined) {
+    this._draftDefaultAction = action;
+    if (action && defaultActionMissingEntity(action)) {
+      this._draftBase = [this._config.default_actions || []].flat();
+      return;
+    }
+    if (action) {
+      this._draftBase = defaultActionsFromAction(action);
+      this._updateConfig({ default_actions: this._draftBase });
+      return;
+    }
+    this._draftBase = [];
+    const config = { ...this._config };
+    delete config.default_actions;
+    this._config = config;
+    fireEvent(this, 'config-changed', { config: this._config });
   }
 
   static styles = css`
@@ -579,8 +678,18 @@ export class SchedulerCardEditor extends LitElement {
       flex-direction: column;
     }
     div.warning {
-      margin: -5px 0px 15px 0px;
+      margin: 8px 0px 0px 0px;
       color: var(--error-color);
+    }
+    div.section-heading {
+      font-weight: 500;
+      margin: 16px 0px 8px 0px;
+    }
+    div.buttons {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
     }
     div.two-columns.switches {
       flex-wrap: wrap;
