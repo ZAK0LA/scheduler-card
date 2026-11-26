@@ -15,6 +15,8 @@ These are two different jobs.
 
 Today one editor serves both. A household member who opens a schedule sees entities, services, options and editor modes, and can change or delete the logic behind it by accident. In practice, one person ends up editing every schedule for everyone.
 
+Similar needs have come up in the [Scheduler thread](https://community.home-assistant.io/t/scheduler-card-custom-component/217458) over the years (e.g. posts [#81](https://community.home-assistant.io/t/scheduler-card-custom-component/217458/81), [#135](https://community.home-assistant.io/t/scheduler-card-custom-component/217458/135), [#2051](https://community.home-assistant.io/t/scheduler-card-custom-component/217458/2051), [#2113](https://community.home-assistant.io/t/scheduler-card-custom-component/217458/2113)), this brings them together.
+
 ## One setup, simple dashboards
 
 The dashboard designer decides what each card shows. Household members get a dashboard built for one purpose, where they can only change what is theirs to change. Nothing changes for existing cards: all options are opt-in.
@@ -121,7 +123,7 @@ They need the `integration` branches of both forks and the Workday integration. 
 
 Feedback is welcome in the [Scheduler thread on the Home Assistant community forum](https://community.home-assistant.io/t/scheduler-card-custom-component/217458).
 
-For the maintainer:
+For the maintainer (Niels, [@neliss](https://community.home-assistant.io/u/neliss) on the forum):
 
 - Does this direction fit your vision for Scheduler?
 - Which parts would you consider for upstream?
