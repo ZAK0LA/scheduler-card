@@ -49,6 +49,8 @@ export class SchedulerTimePicker extends LitElement {
   // large mode only: show the mode, before/after, sunrise/sunset and AM/PM buttons below the time
   @property({ type: Boolean }) stacked = false;
 
+  @property({ type: Boolean }) allowSunTimes = true;
+
   @property({ attribute: false }) stepSize = 10;
 
   // Keep a fixed time within one day instead of wrapping around midnight (interval editor).
@@ -62,6 +64,12 @@ export class SchedulerTimePicker extends LitElement {
       this.hours = time.hours;
       this.minutes = time.minutes;
     }
+  }
+
+  // The small picker always shows the time mode as an icon with a menu and the offset of a sun-based time as a
+  // signed number. The large picker uses buttons for this instead, unless sun-based times are not allowed.
+  private get _modeMenu() {
+    return !this.large || !this.allowSunTimes;
   }
 
   protected render(): TemplateResult {
@@ -114,7 +122,7 @@ export class SchedulerTimePicker extends LitElement {
               .autoValidate=${this.autoValidate}
               maxlength="2"
               max=${this.mode == TimeMode.Fixed ? (this.useAmPm ? 12 : this.dayLimit == 'end' ? 24 : 23) : MAX_OFFFSET_HOURS}
-              min=${this.mode != TimeMode.Fixed && !this.large ? -MAX_OFFFSET_HOURS : 0}
+              min=${this.mode != TimeMode.Fixed && this._modeMenu ? -MAX_OFFFSET_HOURS : 0}
               .disabled=${this.disabled}
               .validityTransform=${_validateHourInput}
             >
@@ -196,8 +204,10 @@ export class SchedulerTimePicker extends LitElement {
 
   _renderTimeMode() {
     if (!this.hass.states['sun.sun']) return nothing;
+    // without sun-based times a fixed time has no other mode to switch to
+    if (!this.allowSunTimes && this.mode == TimeMode.Fixed) return nothing;
 
-    if (this.large) {
+    if (!this._modeMenu) {
       const _toggleTimeMode = () => {
         let newTime = this._convertTimeMode();
         if (newTime.mode != TimeMode.Fixed) newTime = limitOffset(newTime);
@@ -247,6 +257,7 @@ export class SchedulerTimePicker extends LitElement {
 
       const isDisabled = (mode: TimeMode) => {
         if (mode == TimeMode.Fixed) return false;
+        if (!this.allowSunTimes) return true;
         const offsetTime = this._convertTimeMode(mode);
         return Math.abs(offsetTime.hours * 60 + offsetTime.minutes) > MAX_OFFFSET_HOURS * 60;
       };
@@ -261,7 +272,7 @@ export class SchedulerTimePicker extends LitElement {
         this._valueChanged();
       };
 
-      return html`
+      const dropdown = html`
         <ha-dropdown
           @wa-select=${_handleMenuAction}
           @wa-after-hide=${(ev: Event) => {
@@ -284,6 +295,7 @@ export class SchedulerTimePicker extends LitElement {
           )}
         </ha-dropdown>
       `;
+      return this.large ? html`<div class="mode">${dropdown}</div>` : dropdown;
     }
   }
 
@@ -324,7 +336,7 @@ export class SchedulerTimePicker extends LitElement {
         <div class="suffix">
           ${withAmPm ? this._renderAmPmButton() : nothing}
           ${
-            this.mode != TimeMode.Fixed
+            this.mode != TimeMode.Fixed && !this._modeMenu
               ? html`
                   <ha-button appearance="plain" size="large" @click=${_toggleBeforeAfterClick}>
                     <span class="large">
@@ -409,7 +421,16 @@ export class SchedulerTimePicker extends LitElement {
   }
 
   private _hoursChanged(ev: InputEvent) {
-    let value = Number((ev.target as HTMLInputElement).value);
+    const input = String((ev.target as HTMLInputElement).value).trim();
+    let value = Number(input);
+    if (this.mode != TimeMode.Fixed) {
+      // an offset keeps its sign unless a sign is typed, which is the only way to change it without the before / after button
+      const negative = input.startsWith('-') || (!input.startsWith('+') && (this.hours < 0 || this.minutes < 0));
+      this.hours = negative ? -Math.abs(value) : Math.abs(value);
+      this.minutes = negative ? -Math.abs(this.minutes) : Math.abs(this.minutes);
+      this._valueChanged();
+      return;
+    }
     if (this.useAmPm) {
       const amPm = convertTo12Hour(this.hours % 24).am_pm;
       value = convertTo24Hour(value, amPm);
@@ -499,9 +520,9 @@ export class SchedulerTimePicker extends LitElement {
     // the end of the day (24:00) is shown as 00:00
     const hours24 = this.mode == TimeMode.Fixed ? this.hours % 24 : this.hours;
     const hours = this.useAmPm && this.mode == TimeMode.Fixed ? convertTo12Hour(hours24).hours : hours24;
-    if (isNegative && !this.large) return '-' + Math.abs(hours).toFixed();
-    else if (this.mode != TimeMode.Fixed && !this.large) return '+' + Math.abs(hours).toFixed();
-    else if (this.large) return Math.abs(hours);
+    if (isNegative && this._modeMenu) return '-' + Math.abs(hours).toFixed();
+    else if (this.mode != TimeMode.Fixed && this._modeMenu) return '+' + Math.abs(hours).toFixed();
+    else if (!this._modeMenu) return Math.abs(hours);
     else return hours.toFixed();
   }
 
@@ -637,6 +658,13 @@ export class SchedulerTimePicker extends LitElement {
     :host([large]) div.mode ha-icon,
     :host([large]) div.controls ha-icon {
       --mdc-icon-size: 32px;
+    }
+    :host([large]) div.mode ha-icon-button {
+      --mdc-icon-size: 32px;
+      --mdc-icon-button-size: 56px;
+    }
+    :host([large]) div.mode ha-dropdown-item ha-icon {
+      --mdc-icon-size: 24px;
     }
     ha-select {
       --mdc-shape-small: 0;

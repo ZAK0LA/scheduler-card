@@ -24,6 +24,7 @@ export interface CardConfig {
   lock_actions?: boolean;
   show_actions?: boolean;
   default_actions?: DefaultActionConfig[] | DefaultActionConfig;
+  show_sun_mode_button?: boolean;
 }
 
 // An action in the format of the actions of a timeslot in scheduler.add: one entry per entity.

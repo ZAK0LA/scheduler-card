@@ -163,6 +163,15 @@ export class SchedulerCardEditor extends LitElement {
               >${localize('ui.panel.card_editor.fields.show_actions.heading', this.hass)}</ha-switch
             >
           </div>
+          <div class="column">
+            <ha-switch
+              ?checked=${this._config.show_sun_mode_button !== false}
+              @change=${(ev: Event) => {
+                this._updateConfig({ show_sun_mode_button: (ev.target as HTMLInputElement).checked });
+              }}
+              >${localize('ui.panel.card_editor.fields.show_sun_mode_button.heading', this.hass)}</ha-switch
+            >
+          </div>
         </div>
         ${this._renderDefaultActionWarning()}
 

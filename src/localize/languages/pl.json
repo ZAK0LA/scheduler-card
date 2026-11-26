@@ -248,6 +248,9 @@
             "heading": "Pokaż akcje",
             "missing_default": "Przy ukrytych akcjach nie można zapisać nowych harmonogramów:"
           },
+          "show_sun_mode_button": {
+            "heading": "Pokaż przycisk trybu słońca"
+          },
           "sort_by": {
             "heading": "Opcje sortowania",
             "description": "Kolejność, w jakiej harmonogramy pojawiają się na karcie",

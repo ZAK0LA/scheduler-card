@@ -248,6 +248,9 @@
             "heading": "Show actions",
             "missing_default": "New schedules can't be saved while actions are hidden:"
           },
+          "show_sun_mode_button": {
+            "heading": "Show sun mode button"
+          },
           "sort_by": {
             "heading": "Sorting options",
             "description": "Order in which the schedules appear in the card",

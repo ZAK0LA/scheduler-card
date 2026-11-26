@@ -47,6 +47,7 @@ export const validateConfig = (config: any) => {
     'show_editor_mode_button',
     'lock_actions',
     'show_actions',
+    'show_sun_mode_button',
   ]) {
     if (hasKey(config, key) && !isTypeBoolean(config[key])) {
       errors.push(`'${key}' must be a boolean`);
