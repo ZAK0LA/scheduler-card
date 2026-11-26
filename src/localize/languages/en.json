@@ -68,12 +68,20 @@
         "day_types_short": {
           "daily": "daily",
           "workdays": "workdays",
-          "weekend": "weekend"
+          "weekend": "weekend",
+          "regular_workday": "regular workdays",
+          "last_workday": "last workdays",
+          "regular_day_off": "regular days off",
+          "last_day_off": "last days off"
         },
         "day_types_long": {
           "daily": "every day",
           "workdays": "on workdays",
-          "weekend": "in the weekend"
+          "weekend": "in the weekend",
+          "regular_workday": "on regular workdays",
+          "last_workday": "on last workdays",
+          "regular_day_off": "on regular days off",
+          "last_day_off": "on last days off"
         },
         "days": "days",
         "tomorrow": "tomorrow",

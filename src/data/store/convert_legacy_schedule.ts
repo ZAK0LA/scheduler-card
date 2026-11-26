@@ -38,7 +38,21 @@ export interface LegacyTimeslot {
   actions: ServiceCall[];
 }
 
-export type WeekdayType = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun' | 'workday' | 'weekend' | 'daily';
+export type WeekdayType =
+  | 'mon'
+  | 'tue'
+  | 'wed'
+  | 'thu'
+  | 'fri'
+  | 'sat'
+  | 'sun'
+  | 'workday'
+  | 'weekend'
+  | 'daily'
+  | 'regular_workday'
+  | 'last_workday'
+  | 'regular_day_off'
+  | 'last_day_off';
 
 export interface LegacySchedule {
   schedule_id?: string;
@@ -108,6 +122,14 @@ const parseWeekdays = (input: WeekdayType): TWeekday => {
       return TWeekday.Workday;
     case 'weekend':
       return TWeekday.Weekend;
+    case 'regular_workday':
+      return TWeekday.RegularWorkday;
+    case 'last_workday':
+      return TWeekday.LastWorkday;
+    case 'regular_day_off':
+      return TWeekday.RegularDayOff;
+    case 'last_day_off':
+      return TWeekday.LastDayOff;
     default:
       return TWeekday.Daily;
   }

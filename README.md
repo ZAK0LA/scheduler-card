@@ -145,6 +145,16 @@ __Weekend__
 perform action only on Saturday and Sunday. 
 If you have the workday integration installed, the weekend will be considered as the inverse as workdays. This means that holidays and your 'fixed day off' are included in the weekend setting.
 
+__Regular workdays, last workdays, regular days off, last days off__
+perform action depending on whether the following day is a workday:
+- _regular workdays_: a workday followed by a workday
+- _last workdays_: a workday followed by a day off
+- _regular days off_: a day off followed by a day off
+- _last days off_: a day off followed by a workday
+
+Workdays and days off are determined in the same way as for the workdays and weekend options, including holidays defined in the workday integration.
+These options require a version of the scheduler component that supports them.
+
 
 __Custom__
 choose your own days. A list with all days of the week appears. You can select one or more days by clicking them.

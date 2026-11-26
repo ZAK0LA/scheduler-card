@@ -38,6 +38,11 @@ export const computeDayDisplay = (input: TWeekday | Date, formatType: 'short' | 
       return localize(`ui.components.date.day_types_${formatType}.workdays`, hass);
     case TWeekday.Weekend:
       return localize(`ui.components.date.day_types_${formatType}.weekend`, hass);
+    case TWeekday.RegularWorkday:
+    case TWeekday.LastWorkday:
+    case TWeekday.RegularDayOff:
+    case TWeekday.LastDayOff:
+      return localize(`ui.components.date.day_types_${formatType}.${weekday}`, hass);
     case TWeekday.Monday:
     case TWeekday.Tuesday:
     case TWeekday.Wednesday:

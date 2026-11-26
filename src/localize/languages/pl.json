@@ -68,12 +68,20 @@
         "day_types_short": {
           "daily": "codziennie",
           "workdays": "dni robocze",
-          "weekend": "weekend"
+          "weekend": "weekend",
+          "regular_workday": "zwykłe dni robocze",
+          "last_workday": "ostatnie dni robocze",
+          "regular_day_off": "zwykłe dni wolne",
+          "last_day_off": "ostatnie dni wolne"
         },
         "day_types_long": {
           "daily": "każdego dnia",
           "workdays": "w dni robocze",
-          "weekend": "w weekend"
+          "weekend": "w weekend",
+          "regular_workday": "w zwykłe dni robocze",
+          "last_workday": "w ostatnie dni robocze",
+          "regular_day_off": "w zwykłe dni wolne",
+          "last_day_off": "w ostatnie dni wolne"
         },
         "days": "dni",
         "tomorrow": "jutro",

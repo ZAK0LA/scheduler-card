@@ -60,6 +60,14 @@ const parseWeekdays = (input: TWeekday): WeekdayType => {
       return 'workday';
     case TWeekday.Weekend:
       return 'weekend';
+    case TWeekday.RegularWorkday:
+      return 'regular_workday';
+    case TWeekday.LastWorkday:
+      return 'last_workday';
+    case TWeekday.RegularDayOff:
+      return 'regular_day_off';
+    case TWeekday.LastDayOff:
+      return 'last_day_off';
     default:
       return 'daily';
   }
