@@ -26,6 +26,7 @@ patch    patches/card/0002-interval-sun-mode.patch               1219 + 1228
 merge    origin/fix/1229-scheme-time-limit                1230
 merge    origin/fix/1164-exclude-actions                  1232
 merge    origin/feature/1231-default-actions-editor       -      needs 1225
+merge    origin/feature/active-display-item               -      needs component 563
 
 version  zak
 build    dist  npm run rollup
