@@ -52,7 +52,8 @@ export class SchedulerTimePicker extends LitElement {
   @property({ attribute: false }) stepSize = 10;
 
   // Keep a fixed time within one day instead of wrapping around midnight (interval editor).
-  // 'start': 00:00 - 23:59. 'end': 00:01 - 24:00, the end of the day is shown as 24:00 and sent as hours: 24.
+  // 'start': 00:00 - 23:59. 'end': 00:01 - 24:00. The end of the day is kept as 24:00 (sent as hours: 24) so that
+  // the limits and arrows work, but it is shown as 00:00, as everywhere else in the card.
   @property({ attribute: false }) dayLimit?: 'start' | 'end';
 
   protected willUpdate(changedProps: PropertyValues) {
@@ -495,7 +496,9 @@ export class SchedulerTimePicker extends LitElement {
 
   private formatHours() {
     const isNegative = this.hours < 0 || this.minutes < 0;
-    const hours = this.useAmPm && this.mode == TimeMode.Fixed ? convertTo12Hour(this.hours % 24).hours : this.hours;
+    // the end of the day (24:00) is shown as 00:00
+    const hours24 = this.mode == TimeMode.Fixed ? this.hours % 24 : this.hours;
+    const hours = this.useAmPm && this.mode == TimeMode.Fixed ? convertTo12Hour(hours24).hours : hours24;
     if (isNegative && !this.large) return '-' + Math.abs(hours).toFixed();
     else if (this.mode != TimeMode.Fixed && !this.large) return '+' + Math.abs(hours).toFixed();
     else if (this.large) return Math.abs(hours);
