@@ -287,10 +287,7 @@ export class SchedulerMainPanel extends LitElement {
     }
     const slot = this.schedule.entries[this.selectedEntry].slots[this.selectedSlot];
     const isLastSlot = this.selectedSlot === this.schedule.entries[this.selectedEntry!].slots.length - 1;
-    let endTime = slot.stop;
-    if (!endTime && this.selectedSlot < this.schedule.entries[this.selectedEntry].slots.length - 1)
-      endTime = this.schedule.entries[this.selectedEntry].slots[this.selectedSlot + 1].start;
-    if (!endTime) endTime = slot.start;
+    const endTime = this._endTime(this.schedule.entries[this.selectedEntry].slots, this.selectedSlot);
 
     return html`
       ${
@@ -649,6 +646,7 @@ export class SchedulerMainPanel extends LitElement {
     );
     this._updateEntry({ slots: slots });
     if (slotIdxOut != this.selectedSlot) this._updateSelectedSlot(slotIdxOut);
+    this._showStoredTime(ev, this._endTime(slots, slotIdxOut));
   }
 
   _startTimeChanged(ev: CustomEvent) {
@@ -661,6 +659,19 @@ export class SchedulerMainPanel extends LitElement {
     );
     this._updateEntry({ slots: slots });
     if (slotIdxOut != this.selectedSlot) this._updateSelectedSlot(slotIdxOut);
+    this._showStoredTime(ev, slots[slotIdxOut].start);
+  }
+
+  // The end time shown for a timeslot: its stop time, or else the start of the next timeslot.
+  private _endTime(slots: Timeslot[], slotIdx: number) {
+    return slots[slotIdx].stop || (slotIdx < slots.length - 1 ? slots[slotIdx + 1].start : slots[slotIdx].start);
+  }
+
+  // A time entered outside the limits of the timeslot is limited by moveTimeslot(). When it is limited to the same
+  // value as before, the .time binding doesn't change and the picker would keep showing the entered time, so the
+  // stored time is set directly.
+  private _showStoredTime(ev: CustomEvent, time: string) {
+    (ev.currentTarget as SchedulerTimePicker).time = time;
   }
 
   _addTimeslot(ev: Event) {

@@ -1,6 +1,7 @@
 import { mdiClockOutline, mdiWeatherSunsetDown, mdiWeatherSunsetUp } from '@mdi/js';
 import { css, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
+import { live } from 'lit/directives/live.js';
 import { computeTimeOffset } from '../data/time/compute_time_offset';
 import { parseTimeString } from '../data/time/parse_time_string';
 import { Time, TimeMode } from '../types';
@@ -113,7 +114,7 @@ export class SchedulerTimePicker extends LitElement {
             <ha-input
               id="hour"
               inputmode="numeric"
-              .value=${this.formatHours()}
+              .value=${live(this.formatHours())}
               label=""
               name="hours"
               @change=${this._hoursChanged}
@@ -159,7 +160,7 @@ export class SchedulerTimePicker extends LitElement {
             <ha-input
               id="min"
               inputmode="numeric"
-              .value=${this.formatMinutes()}
+              .value=${live(this.formatMinutes())}
               label=""
               @change=${this._minutesChanged}
               @focusin=${this._onFocus}
