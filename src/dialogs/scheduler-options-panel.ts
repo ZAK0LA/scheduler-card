@@ -59,6 +59,9 @@ export class SchedulerOptionsPanel extends LitElement {
 
   @state() customTagValue: string = '';
 
+  // custom icon of the schedule entity (entity registry), null for the automatic icon
+  @property({ attribute: false }) icon: string | null = null;
+
   async firstUpdated() {
     (await (window as any).loadCardHelpers()).importMoreInfoControl('input_datetime');
 
@@ -206,6 +209,8 @@ export class SchedulerOptionsPanel extends LitElement {
         ></ha-input>
       </div>
 
+      ${this.renderIcon()}
+
       <span class="header">${localize('ui.panel.options.tags', this.hass)}:</span>
       <div>
         <scheduler-combo-selector
@@ -288,6 +293,22 @@ export class SchedulerOptionsPanel extends LitElement {
         <ha-icon slot="start" icon="mdi:trash-can-outline"></ha-icon>
         ${hassLocalize('ui.common.delete', this.hass)}
       </ha-button>
+    `;
+  }
+
+  renderIcon() {
+    // the icon is stored in the entity registry, which requires an existing entity and an admin user
+    if (!this.schedule.entity_id || !this.hass.user?.is_admin) return html``;
+
+    return html`
+      <span class="header">${localize('ui.panel.options.icon.header', this.hass)}:</span>
+      <ha-selector
+        .hass=${this.hass}
+        .selector=${{ icon: {} }}
+        .value=${this.icon || ''}
+        @value-changed=${(ev: CustomEvent) =>
+          this.dispatchEvent(new CustomEvent('change', { detail: { icon: ev.detail.value || null } }))}
+      ></ha-selector>
     `;
   }
 

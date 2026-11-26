@@ -25,6 +25,7 @@ import {
   defaultActionFitsSchedule,
   resolveDefaultAction,
 } from '../data/actions/default_action';
+import { getEntityIcon, updateEntityIcon } from '../data/store/entity_icon';
 
 import './scheduler-main-panel';
 import './scheduler-options-panel';
@@ -54,6 +55,9 @@ export class DialogSchedulerEditor extends LitElement {
   // action from 'default_actions', or the reason why there is none
   @state() private _defaultAction?: Action;
   @state() private _defaultActionError?: DefaultActionFailure;
+  // custom icon of the schedule entity, stored in the entity registry when the schedule is saved
+  @state() _icon: string | null = null;
+  private _initialIcon: string | null = null;
 
   @state() _viewMode: EditorMode = EditorMode.Single;
   set viewMode(mode: EditorMode) {
@@ -75,6 +79,8 @@ export class DialogSchedulerEditor extends LitElement {
     this.schedule = params.schedule;
     this._panel = 'main';
     this.large = false;
+    this._icon = this._initialIcon =
+      (this.schedule.entity_id && getEntityIcon(this.hass, this.schedule.entity_id)) || null;
 
     const defaultAction = resolveDefaultAction(this.hass, this._params!.cardConfig);
     this._defaultAction = defaultAction.action;
@@ -178,6 +184,7 @@ export class DialogSchedulerEditor extends LitElement {
                     .hass=${this.hass}
                     .config=${this._params.cardConfig}
                     .schedule=${this.schedule}
+                    .icon=${this._icon}
                     @change=${this._updateSchedule}
                   >
                   </scheduler-options-panel>
@@ -214,6 +221,9 @@ export class DialogSchedulerEditor extends LitElement {
     }
     if (changedProps.includes('selectedSlot')) {
       this.selectedSlot = ev.detail.selectedSlot;
+    }
+    if (changedProps.includes('icon')) {
+      this._icon = ev.detail.icon;
     }
   }
 
@@ -258,6 +268,11 @@ export class DialogSchedulerEditor extends LitElement {
       });
     } else if (this.schedule.schedule_id) {
       const oldSchedule = parseTimeBar(await fetchScheduleItem(this.hass, this.schedule.schedule_id!), this.hass);
+      if (this._icon !== this._initialIcon) {
+        await updateEntityIcon(this.hass, this.schedule.entity_id!, this._icon).catch((e) =>
+          handleWebsocketError(e, this, this.hass)
+        );
+      }
       //do not save if there are no changes made
       if (deepCompare(this.schedule, oldSchedule)) {
         this.closeDialog();

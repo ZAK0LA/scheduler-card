@@ -593,7 +593,7 @@ Supported options for `display_options`:
 | ---------------- | -------------- | ------------------------------------------------ | ---------------------------------------------------------------------- |
 | `primary_info`   | string or list | `- "{entity}: {action}"`<br>`- additional-tasks` | Displayed text on the first line.<br>Choose from the properties below. |
 | `secondary_info` | string or list | `relative-time`                                  | Displayed text on the second line<br>Choose from the properties below. |
-| `icon`           | string         | "action"                                         | Choose which icon is displayed (`action` or `entity`)                  |
+| `icon`           | string         | "action"                                         | Choose which icon is displayed (`action`, `entity` or `schedule`).<br>`schedule` shows the custom icon set for the schedule entity in Home Assistant, or the `action` icon if there is none. The icon can be set in the entity settings of the schedule, or by admin users in the Options tab of the schedule editor. |
 
 For creating multiple lines, enter a list of multiple properties. Empty items will be automatically skipped.
 
