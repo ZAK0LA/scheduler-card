@@ -42,6 +42,10 @@ export const computeScheduleDisplay = (
         return capitalizeFirstLetter(entityDisplay);
       case DisplayItem.RelativeTime:
         return '<relative-time></relative-time>';
+      case DisplayItem.Active:
+        return schedule.entity_id && hass.states[schedule.entity_id]?.attributes.active === true
+          ? capitalizeFirstLetter(localize('ui.panel.overview.active_now', hass))
+          : '';
       case DisplayItem.Tags:
         return schedule.tags?.map((e) => `<tag>${e}</tag>`).join('');
       case DisplayItem.Time:

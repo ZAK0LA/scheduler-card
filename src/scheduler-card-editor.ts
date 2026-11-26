@@ -326,6 +326,13 @@ export class SchedulerCardEditor extends LitElement {
               ?checked=${[this._config.display_options?.secondary_info || DEFAULT_SECONDARY_INFO_DISPLAY].flat().includes('additional-tasks')}
               >${localize('ui.panel.card_editor.fields.display_format_secondary.options.additional_tasks', this.hass)}</ha-checkbox
             >
+
+            <ha-checkbox
+              value="active"
+              @change=${this._setDisplayOptionsSecondary}
+              ?checked=${[this._config.display_options?.secondary_info || DEFAULT_SECONDARY_INFO_DISPLAY].flat().includes('active')}
+              >${localize('ui.panel.card_editor.fields.display_format_secondary.options.active', this.hass)}</ha-checkbox
+            >
           </div>
         </div>
 
@@ -387,9 +394,10 @@ export class SchedulerCardEditor extends LitElement {
         time: secondaryInfo.includes('relative-time') ? 3 : 2,
         days: secondaryInfo.includes('relative-time') ? 2 : 3,
         'additional-tasks': 4,
+        active: 5,
       };
-      const rankA = Object.keys(ranking).includes(a) ? ranking[a] : 5;
-      const rankB = Object.keys(ranking).includes(b) ? ranking[b] : 5;
+      const rankA = Object.keys(ranking).includes(a) ? ranking[a] : 6;
+      const rankB = Object.keys(ranking).includes(b) ? ranking[b] : 6;
       if (rankA > rankB) return 1;
       if (rankA < rankB) return -1;
       return 0;
