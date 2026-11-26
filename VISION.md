@@ -89,8 +89,9 @@ display_options:
 | Hide the switch to sun-based times | [#1228](https://github.com/nielsfaber/scheduler-card/issues/1228) | |
 | Schedule icons in the list | [#1222](https://github.com/nielsfaber/scheduler-card/issues/1222) | |
 | Interval editor (start and end time) | [#1219](https://github.com/nielsfaber/scheduler-card/issues/1219) | |
-| Regular and last workdays / days off | | [#562](https://github.com/nielsfaber/scheduler-component/issues/562) |
+| Regular and last workdays / days off | | [#562](https://github.com/nielsfaber/scheduler-component/issues/562), builds on PR [#561](https://github.com/nielsfaber/scheduler-component/pull/561) (holidays for future dates) |
 | `active` attribute: the schedule applies right now | | [#563](https://github.com/nielsfaber/scheduler-component/issues/563) |
+| Show in the list which schedule applies right now | [#1233](https://github.com/nielsfaber/scheduler-card/issues/1233) | uses [#563](https://github.com/nielsfaber/scheduler-component/issues/563) |
 
 Two larger proposals are not part of the working setup yet:
 
