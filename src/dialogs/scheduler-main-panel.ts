@@ -34,12 +34,14 @@ import { capitalizeFirstLetter } from '../lib/capitalize_first_letter';
 import { hassLocalize } from '../localize/hassLocalize';
 import { isDefined } from '../lib/is_defined';
 import { moveTimeslot } from '../data/schedule/move_timeslot';
+import { defaultIntervalStop, setIntervalTime } from '../data/schedule/interval';
 import { computeEntityDisplay } from '../data/format/compute_entity_display';
 import { DEFAULT_TIME_STEP } from '../const';
 import { HassEntity } from 'home-assistant-js-websocket';
 
 import '../components/scheduler-timeslot-editor';
 import '../components/scheduler-time-picker';
+import type { SchedulerTimePicker } from '../components/scheduler-time-picker';
 import '../components/scheduler-entity-picker';
 import '../dialogs/dialog-select-weekdays';
 import '../dialogs/dialog-select-action';
@@ -99,14 +101,26 @@ export class SchedulerMainPanel extends LitElement {
                 this.config.show_editor_mode_button === false
                   ? ''
                   : html`
-                      <ha-button appearance="plain" size="small" @click=${this.toggleViewMode}>
-                        ${
-                          this.viewMode == EditorMode.Scheme
-                            ? localize('ui.panel.editor.toggle_single_mode', this.hass)
-                            : localize('ui.panel.editor.toggle_scheme_mode', this.hass)
-                        }
-                        <ha-icon slot="end" icon="mdi:swap-horizontal"></ha-icon>
-                      </ha-button>
+              <ha-dropdown
+                @wa-select=${this._selectViewMode}
+                @wa-after-hide=${(ev: Event) => {
+          ((ev.target as HTMLElement).firstElementChild as HTMLElement).blur();
+        }}
+                placement="bottom-end"
+              >
+                <ha-button slot="trigger" appearance="plain" size="small">
+                  ${localize(`ui.panel.editor.editor_mode.${this.viewMode}`, this.hass)}
+                  <ha-icon slot="end" icon="mdi:swap-horizontal"></ha-icon>
+                </ha-button>
+                ${[EditorMode.Single, EditorMode.Interval, EditorMode.Scheme].map(
+          (mode) => html`
+                    <ha-dropdown-item value=${mode}>
+                      <ha-icon icon="mdi:check" style="${this.viewMode == mode ? '' : 'visibility: hidden'}"></ha-icon>
+                      ${localize(`ui.panel.editor.editor_mode.${mode}`, this.hass)}
+                    </ha-dropdown-item>
+                  `
+        )}
+              </ha-dropdown>
                     `
               }
             </div>
@@ -129,7 +143,9 @@ export class SchedulerMainPanel extends LitElement {
                   >
                   </scheduler-timeslot-editor>
                 `
-              : html`
+          : this.viewMode == EditorMode.Interval
+            ? this.renderIntervalPickers()
+            : html`
                   ${this.hass.localize('ui.dialogs.helper_settings.input_datetime.time')}:
                   <scheduler-time-picker
                     .hass=${this.hass}
@@ -148,9 +164,70 @@ export class SchedulerMainPanel extends LitElement {
     `;
   }
 
-  toggleViewMode() {
-    const newViewMode: EditorMode = this.viewMode == EditorMode.Scheme ? EditorMode.Single : EditorMode.Scheme;
+  _selectViewMode(ev: CustomEvent) {
+    const newViewMode: EditorMode = ev.detail.item.value;
+    if (newViewMode == this.viewMode) return;
     this.dispatchEvent(new CustomEvent('setViewMode', { detail: newViewMode }));
+  }
+
+  renderIntervalPickers() {
+    if (this.selectedEntry === null || this.selectedSlot === null) return html``;
+    const slot = this.schedule.entries[this.selectedEntry].slots[this.selectedSlot];
+    if (!slot) return html``;
+
+    return html`
+      <div class="interval">
+        <div class="column">
+          ${localize('ui.panel.editor.start_time', this.hass)}:
+          <scheduler-time-picker
+            .hass=${this.hass}
+            .dayLimit=${'start'}
+            .time=${slot.start}
+            @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'start')}
+            ?useAmPm=${useAmPm(this.hass.locale)}
+            .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
+            large
+            stacked
+          >
+          </scheduler-time-picker>
+        </div>
+        <div class="column">
+          ${localize('ui.panel.editor.stop_time', this.hass)}:
+          <scheduler-time-picker
+            .hass=${this.hass}
+            .dayLimit=${'end'}
+            .time=${slot.stop || defaultIntervalStop(slot.start, this.hass)}
+            @value-changed=${(ev: CustomEvent) => this._intervalTimeChanged(ev, 'stop')}
+            ?useAmPm=${useAmPm(this.hass.locale)}
+            .stepSize=${this.config.time_step || DEFAULT_TIME_STEP}
+            large
+            stacked
+          >
+          </scheduler-time-picker>
+        </div>
+      </div>
+    `;
+  }
+
+  _intervalTimeChanged(ev: CustomEvent, field: 'start' | 'stop') {
+    const value = ev.detail.value as Time;
+    const [slots, slotIdxOut] = setIntervalTime(
+      [...this.schedule.entries[this.selectedEntry!].slots],
+      Number(this.selectedSlot),
+      { [field]: value },
+      this.hass
+    );
+    // Select the new slot index before the slots are replaced: a whole-day interval has a single slot, so the old
+    // index may not exist in the new slots when the panel renders before the dialog passes the index back.
+    if (slotIdxOut != this.selectedSlot) {
+      this._updateSelectedSlot(slotIdxOut);
+      this.selectedSlot = slotIdxOut;
+    }
+    this._updateEntry({ slots: slots });
+    // When the time is limited to the same value as before, the .time binding doesn't change and the picker would
+    // keep showing the time that was entered, so it is set directly.
+    const time = slots[slotIdxOut][field];
+    if (time) (ev.currentTarget as SchedulerTimePicker).time = time;
   }
 
   renderActionButtons() {
@@ -649,6 +726,17 @@ export class SchedulerMainPanel extends LitElement {
         div.actions {
           align-self: flex-end;
         }
+      }
+      div.interval {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: 16px;
+        margin-bottom: 8px;
+      }
+      div.interval .column {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
       }
       div.slot-placeholder {
         padding: 20px 0px 0px 0px;

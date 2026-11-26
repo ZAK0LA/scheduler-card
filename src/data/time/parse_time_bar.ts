@@ -27,7 +27,8 @@ export const parseTimeBar = (schedule: Schedule, hass: HomeAssistant): Schedule 
         else slot = { ...slot, start: slot.stop, stop: slot.start };
       }
       //correct timeslots which have a duration shorter than 1 minute
-      if (slot.stop && computeTimestamp(slot.stop, hass) - computeTimestamp(slot.start, hass) < 60) {
+      //a stop time of 00:00:00 is the end of the day, so 00:00:00 - 00:00:00 is the whole day
+      if (slot.stop && (computeTimestamp(slot.stop, hass) || 24 * 3600) - computeTimestamp(slot.start, hass) < 60) {
         slot = { ...slot, stop: timeToString(addTimeOffset(parseTimeString(slot.start), { minutes: 1 })) };
       }
       return slot;

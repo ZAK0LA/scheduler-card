@@ -89,3 +89,29 @@ export const defaultSingleTimerConfig: Schedule = {
     },
   ],
 };
+
+export const defaultIntervalConfig: Schedule = {
+  ...defaultTimeSchemeConfig,
+  entries: [
+    {
+      weekdays: [TWeekday.Daily],
+      slots: [
+        {
+          ...defaultSlotConfig,
+          start: '00:00:00',
+          stop: '12:00:00',
+        },
+        {
+          ...defaultSlotConfig,
+          start: '12:00:00',
+          stop: '13:00:00',
+        },
+        {
+          ...defaultSlotConfig,
+          start: '13:00:00',
+          stop: '00:00:00',
+        },
+      ],
+    },
+  ],
+};

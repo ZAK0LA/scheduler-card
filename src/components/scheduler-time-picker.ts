@@ -1,5 +1,5 @@
 import { mdiClockOutline, mdiWeatherSunsetDown, mdiWeatherSunsetUp } from '@mdi/js';
-import { css, html, LitElement, nothing, TemplateResult } from 'lit';
+import { css, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { computeTimeOffset } from '../data/time/compute_time_offset';
 import { parseTimeString } from '../data/time/parse_time_string';
@@ -25,7 +25,7 @@ export class SchedulerTimePicker extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   set time(value: string) {
-    const time = parseTimeString(value);
+    const time = this._limitToDay(parseTimeString(value));
     this.mode = time.mode;
     this.hours = time.hours;
     this.minutes = time.minutes;
@@ -46,7 +46,23 @@ export class SchedulerTimePicker extends LitElement {
 
   @property({ type: Boolean }) large = false;
 
+  // large mode only: show the mode, before/after, sunrise/sunset and AM/PM buttons below the time
+  @property({ type: Boolean }) stacked = false;
+
   @property({ attribute: false }) stepSize = 10;
+
+  // Keep a fixed time within one day instead of wrapping around midnight (interval editor).
+  // 'start': 00:00 - 23:59. 'end': 00:01 - 24:00. The end of the day is kept as 24:00 (sent as hours: 24) so that
+  // the limits and arrows work, but it is shown as 00:00, as everywhere else in the card.
+  @property({ attribute: false }) dayLimit?: 'start' | 'end';
+
+  protected willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('dayLimit')) {
+      const time = this._limitToDay({ mode: this.mode, hours: this.hours, minutes: this.minutes });
+      this.hours = time.hours;
+      this.minutes = time.minutes;
+    }
+  }
 
   protected render(): TemplateResult {
     const _validateHourInput = (value: any, _nativeValidity: any) => {
@@ -79,7 +95,7 @@ export class SchedulerTimePicker extends LitElement {
                     <ha-button
                       appearance="plain"
                       @click=${() => this._addTimeOffset({ hours: 1 })}
-                      ?disabled=${this.mode != TimeMode.Fixed && this.hours == MAX_OFFFSET_HOURS}
+                      ?disabled=${(this.mode != TimeMode.Fixed && this.hours == MAX_OFFFSET_HOURS) || this._atDayLimit(1)}
                     >
                       <ha-icon icon="mdi:chevron-up"></ha-icon>
                     </ha-button>
@@ -97,7 +113,7 @@ export class SchedulerTimePicker extends LitElement {
               .required=${this.required}
               .autoValidate=${this.autoValidate}
               maxlength="2"
-              max=${this.mode == TimeMode.Fixed ? (this.useAmPm ? 12 : 23) : MAX_OFFFSET_HOURS}
+              max=${this.mode == TimeMode.Fixed ? (this.useAmPm ? 12 : this.dayLimit == 'end' ? 24 : 23) : MAX_OFFFSET_HOURS}
               min=${this.mode != TimeMode.Fixed && !this.large ? -MAX_OFFFSET_HOURS : 0}
               .disabled=${this.disabled}
               .validityTransform=${_validateHourInput}
@@ -109,7 +125,7 @@ export class SchedulerTimePicker extends LitElement {
                     <ha-button
                       appearance="plain"
                       @click=${() => this._addTimeOffset({ hours: -1 })}
-                      ?disabled=${this.mode != TimeMode.Fixed && this.hours == -MAX_OFFFSET_HOURS}
+                      ?disabled=${(this.mode != TimeMode.Fixed && this.hours == -MAX_OFFFSET_HOURS) || this._atDayLimit(-1)}
                     >
                       <ha-icon icon="mdi:chevron-down"></ha-icon>
                     </ha-button>
@@ -125,7 +141,7 @@ export class SchedulerTimePicker extends LitElement {
                     <ha-button
                       appearance="plain"
                       @click=${() => this._addTimeOffset({ minutes: this.stepSize })}
-                      ?disabled=${this.mode != TimeMode.Fixed && this.hours == MAX_OFFFSET_HOURS}
+                      ?disabled=${(this.mode != TimeMode.Fixed && this.hours == MAX_OFFFSET_HOURS) || this._atDayLimit(1)}
                     >
                       <ha-icon icon="mdi:chevron-up"></ha-icon>
                     </ha-button>
@@ -155,7 +171,7 @@ export class SchedulerTimePicker extends LitElement {
                     <ha-button
                       appearance="plain"
                       @click=${() => this._addTimeOffset({ minutes: -this.stepSize })}
-                      ?disabled=${this.mode != TimeMode.Fixed && this.hours == -MAX_OFFFSET_HOURS}
+                      ?disabled=${(this.mode != TimeMode.Fixed && this.hours == -MAX_OFFFSET_HOURS) || this._atDayLimit(-1)}
                     >
                       <ha-icon icon="mdi:chevron-down"></ha-icon>
                     </ha-button>
@@ -163,8 +179,17 @@ export class SchedulerTimePicker extends LitElement {
                 : nothing
             }
           </div>
-          ${this._renderSuffix()} ${this.large ? this._renderTimeMode() : nothing}
+          ${
+            this.large && this.stacked
+              ? html`<div class="suffix">${this._renderAmPmButton()}</div>`
+              : html`${this._renderSuffix()} ${this.large ? this._renderTimeMode() : nothing}`
+          }
         </div>
+        ${
+          this.large && this.stacked
+            ? html`<div class="controls">${this._renderTimeMode()} ${this._renderSuffix(false)}</div>`
+            : nothing
+        }
       </div>
     `;
   }
@@ -262,16 +287,28 @@ export class SchedulerTimePicker extends LitElement {
     }
   }
 
-  _renderSuffix() {
+  // large mode only: the AM/PM toggle button
+  _renderAmPmButton() {
+    if (!this.useAmPm || this.mode != TimeMode.Fixed) return nothing;
+
+    const _toggleAmPmClick = () => {
+      const value = convertTo12Hour(this.hours % 24).am_pm;
+      const hours12 = convertTo12Hour(this.hours % 24).hours;
+      this.hours = convertTo24Hour(hours12, value == 'AM' ? AmPmFormat.PM : AmPmFormat.AM);
+
+      this._valueChanged();
+    };
+
+    return html`
+      <ha-button appearance="plain" @click=${_toggleAmPmClick}>
+        <span class="large"> ${convertTo12Hour(this.hours % 24).am_pm == AmPmFormat.AM ? 'AM' : 'PM'} </span>
+      </ha-button>
+    `;
+  }
+
+  // in stacked mode the AM/PM button is rendered next to the time instead (withAmPm = false)
+  _renderSuffix(withAmPm = true) {
     if (this.large) {
-      const _toggleAmPmClick = () => {
-        const value = convertTo12Hour(this.hours).am_pm;
-        const hours12 = convertTo12Hour(this.hours).hours;
-        this.hours = convertTo24Hour(hours12, value == 'AM' ? AmPmFormat.PM : AmPmFormat.AM);
-
-        this._valueChanged();
-      };
-
       const _toggleBeforeAfterClick = () => {
         if (this.hours != 0) this.hours = -this.hours;
         else this.minutes = -this.minutes;
@@ -285,15 +322,7 @@ export class SchedulerTimePicker extends LitElement {
 
       return html`
         <div class="suffix">
-          ${
-            this.useAmPm && this.mode == TimeMode.Fixed
-              ? html`
-                  <ha-button appearance="plain" @click=${_toggleAmPmClick}>
-                    <span class="large"> ${convertTo12Hour(this.hours).am_pm == AmPmFormat.AM ? 'AM' : 'PM'} </span>
-                  </ha-button>
-                `
-              : nothing
-          }
+          ${withAmPm ? this._renderAmPmButton() : nothing}
           ${
             this.mode != TimeMode.Fixed
               ? html`
@@ -327,7 +356,7 @@ export class SchedulerTimePicker extends LitElement {
       return html`
         <ha-select
           .required=${this.required}
-          .value=${convertTo12Hour(this.hours).am_pm == AmPmFormat.AM ? 'AM' : 'PM'}
+          .value=${convertTo12Hour(this.hours % 24).am_pm == AmPmFormat.AM ? 'AM' : 'PM'}
           .disabled=${this.disabled}
           name="amPm"
           naturalMenuWidth
@@ -382,7 +411,7 @@ export class SchedulerTimePicker extends LitElement {
   private _hoursChanged(ev: InputEvent) {
     let value = Number((ev.target as HTMLInputElement).value);
     if (this.useAmPm) {
-      const amPm = convertTo12Hour(this.hours).am_pm;
+      const amPm = convertTo12Hour(this.hours % 24).am_pm;
       value = convertTo24Hour(value, amPm);
     }
     this.hours = value;
@@ -397,9 +426,9 @@ export class SchedulerTimePicker extends LitElement {
 
   private _amPmChanged(ev: CustomEvent) {
     const value = ev.detail.value;
-    const oldValue = convertTo12Hour(this.hours).am_pm;
+    const oldValue = convertTo12Hour(this.hours % 24).am_pm;
     if (oldValue == value) return;
-    const hours12 = convertTo12Hour(this.hours).hours;
+    const hours12 = convertTo12Hour(this.hours % 24).hours;
     this.hours = convertTo24Hour(hours12, value == 'AM' ? AmPmFormat.AM : AmPmFormat.PM);
     this._valueChanged();
   }
@@ -407,8 +436,16 @@ export class SchedulerTimePicker extends LitElement {
   private _addTimeOffset(offset: { hours?: number; minutes?: number }) {
     let time: Time = { mode: this.mode, hours: this.hours, minutes: this.minutes };
 
-    time = addTimeOffset(time, offset);
-    if (offset.minutes) time = roundTime(time, this.stepSize);
+    if (this.dayLimit && this.mode == TimeMode.Fixed) {
+      // no wrap around midnight: stop at the limit of the day
+      const total = this.hours * 60 + this.minutes + (offset.hours || 0) * 60 + (offset.minutes || 0);
+      time = { ...time, hours: Math.floor(total / 60), minutes: total - Math.floor(total / 60) * 60 };
+      if (offset.minutes) time = roundTime(time, this.stepSize);
+      time = this._limitToDay(time, false);
+    } else {
+      time = addTimeOffset(time, offset);
+      if (offset.minutes) time = roundTime(time, this.stepSize);
+    }
     if (this.mode != TimeMode.Fixed) time = limitOffset(time);
 
     this.hours = time.hours;
@@ -416,12 +453,38 @@ export class SchedulerTimePicker extends LitElement {
     this._valueChanged();
   }
 
+  private _dayRange() {
+    return this.dayLimit == 'end' ? [1, 24 * 60] : [0, 24 * 60 - 1];
+  }
+
+  /**
+   * Limit a fixed time to the range of dayLimit. With 'end', 00:00 means the end of the day (24:00), unless
+   * midnightIsEnd is false (arrow buttons, so that going down never jumps to 24:00).
+   */
+  private _limitToDay<T extends Time>(time: T, midnightIsEnd = true): T {
+    if (!this.dayLimit || time.mode != TimeMode.Fixed) return time;
+    let total = time.hours * 60 + time.minutes;
+    if (this.dayLimit == 'end' && midnightIsEnd && total == 0) total = 24 * 60;
+    const [min, max] = this._dayRange();
+    total = Math.min(Math.max(total, min), max);
+    return { ...time, hours: Math.floor(total / 60), minutes: total % 60 };
+  }
+
+  private _atDayLimit(direction: 1 | -1) {
+    if (!this.dayLimit || this.mode != TimeMode.Fixed) return false;
+    const total = this.hours * 60 + this.minutes;
+    const [min, max] = this._dayRange();
+    return direction > 0 ? total >= max : total <= min;
+  }
+
   private _valueChanged() {
-    const value: Time = {
+    const value: Time = this._limitToDay({
       mode: this.mode,
       hours: this.hours,
       minutes: this.minutes,
-    };
+    });
+    this.hours = value.hours;
+    this.minutes = value.minutes;
     fireEvent(this, 'value-changed', {
       value,
     });
@@ -433,7 +496,9 @@ export class SchedulerTimePicker extends LitElement {
 
   private formatHours() {
     const isNegative = this.hours < 0 || this.minutes < 0;
-    const hours = this.useAmPm && this.mode == TimeMode.Fixed ? convertTo12Hour(this.hours).hours : this.hours;
+    // the end of the day (24:00) is shown as 00:00
+    const hours24 = this.mode == TimeMode.Fixed ? this.hours % 24 : this.hours;
+    const hours = this.useAmPm && this.mode == TimeMode.Fixed ? convertTo12Hour(hours24).hours : hours24;
     if (isNegative && !this.large) return '-' + Math.abs(hours).toFixed();
     else if (this.mode != TimeMode.Fixed && !this.large) return '+' + Math.abs(hours).toFixed();
     else if (this.large) return Math.abs(hours);
@@ -467,6 +532,22 @@ export class SchedulerTimePicker extends LitElement {
     }
     :host([large]) div.input {
       width: 100%;
+    }
+    :host([large][stacked]) .time-input-wrap {
+      flex-direction: column;
+    }
+    /* on narrow screens the AM/PM button moves below the time instead of being cut off */
+    :host([large][stacked]) div.input {
+      flex-wrap: wrap;
+    }
+    div.controls {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    div.controls div.suffix {
+      flex-grow: 0;
     }
     div.hours,
     div.minutes {
@@ -553,7 +634,8 @@ export class SchedulerTimePicker extends LitElement {
       align-items: center;
     }
     :host([large]) div.suffix ha-icon,
-    :host([large]) div.mode ha-icon {
+    :host([large]) div.mode ha-icon,
+    :host([large]) div.controls ha-icon {
       --mdc-icon-size: 32px;
     }
     ha-select {

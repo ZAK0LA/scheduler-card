@@ -147,6 +147,11 @@
         "select_timeslot": "Wybierz przedział czasowy",
         "toggle_single_mode": "Do trybu prostego",
         "toggle_scheme_mode": "Do trybu schematu",
+        "editor_mode": {
+          "single": "Prosty",
+          "interval": "Przedział",
+          "scheme": "Schemat"
+        },
         "validation_errors": {
           "overlapping_time": "Harmonogram ma nachodzące na siebie przedziały czasowe",
           "missing_target_entity": "Jednej lub więcej akcji brakuje docelowej encji",
@@ -220,6 +225,7 @@
             "heading": "Domyślny edytor czasu",
             "options": {
               "single": "Tryb prostego harmonogramu",
+              "interval": "Tryb przedziału czasu",
               "scheme": "Tryb schematu czasu"
             }
           },

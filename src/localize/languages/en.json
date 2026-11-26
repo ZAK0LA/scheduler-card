@@ -147,6 +147,11 @@
         "select_timeslot": "Select a timeslot",
         "toggle_single_mode": "To single mode",
         "toggle_scheme_mode": "To scheme mode",
+        "editor_mode": {
+          "single": "Single",
+          "interval": "Interval",
+          "scheme": "Scheme"
+        },
         "validation_errors": {
           "overlapping_time": "Schedule has overlapping timeslots",
           "missing_target_entity": "One or more actions are missing a target entity",
@@ -220,6 +225,7 @@
             "heading": "Default time editor",
             "options": {
               "single": "Single schedule mode",
+              "interval": "Interval mode",
               "scheme": "Time scheme mode"
             }
           },
