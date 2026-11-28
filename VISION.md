@@ -122,15 +122,7 @@ They need the `integration` branches of both forks and the Workday integration. 
 
 ## Feedback
 
-Feedback is welcome in the [Scheduler thread on the Home Assistant community forum](https://community.home-assistant.io/t/scheduler-card-custom-component/217458).
-
-For the maintainer (Niels, [@neliss](https://community.home-assistant.io/u/neliss) on the forum):
-
-- Does this direction fit your vision for Scheduler?
-- Which parts would you consider for upstream?
-- Do you see architectural or maintenance concerns that should be addressed first?
-
-For users: if you would use something like this, which part matters most to you?
+The discussion with the maintainer, with a proposed order for the related requests, is in [scheduler-card #1237](https://github.com/nielsfaber/scheduler-card/issues/1237). If you would use something like this, a 👍 or a short comment there helps the most.
 
 I'm happy to adapt the implementations, split them into focused pull requests, and add tests and documentation. I don't expect everything to be accepted.
 
